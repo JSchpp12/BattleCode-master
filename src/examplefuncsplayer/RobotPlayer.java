@@ -29,7 +29,7 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status.
         RobotPlayer.rc = rc;
-
+    //I jacob
         turnCount = 0;
 
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
