@@ -27,7 +27,7 @@ public strictfp class RobotPlayer {
     public static void run(RobotController rc) throws GameActionException {
 
         // This is the RobotController object. You use it to perform actions from this robot,
-        // and to get information on its current status.
+        // and to get information on its current status
         RobotPlayer.rc = rc;
     //I jacob
         turnCount = 0;
@@ -68,7 +68,6 @@ public strictfp class RobotPlayer {
 
     static void runMiner() throws GameActionException {
         tryBlockchain();
-        tryMove(randomDirection());
         if (tryMove(randomDirection()))
             System.out.println("I moved!");
         // tryBuild(randomSpawnedByMiner(), randomDirection());
