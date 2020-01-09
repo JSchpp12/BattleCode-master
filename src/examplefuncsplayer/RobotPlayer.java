@@ -3,7 +3,7 @@ import battlecode.common.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-
+//I Rob
     static Direction[] directions = {
         Direction.NORTH,
         Direction.NORTHEAST,
