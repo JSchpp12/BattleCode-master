@@ -42,15 +42,17 @@ public strictfp class RobotPlayer {
                 // You can add the missing ones or rewrite this into your own control structure.
                 System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
                 switch (rc.getType()) {
-                    case HQ:                 runHQ();                break;
                     case MINER:              runMiner();             break;
+                    case LANDSCAPER:         runLandscaper();        break;
+                    case DELIVERY_DRONE:     runDeliveryDrone();     break;
+
+                    case HQ:                 runHQ();                break;
+
                     case REFINERY:           runRefinery();          break;
+                    case NET_GUN:            runNetGun();            break;
                     case VAPORATOR:          runVaporator();         break;
                     case DESIGN_SCHOOL:      runDesignSchool();      break;
                     case FULFILLMENT_CENTER: runFulfillmentCenter(); break;
-                    case LANDSCAPER:         runLandscaper();        break;
-                    case DELIVERY_DRONE:     runDeliveryDrone();     break;
-                    case NET_GUN:            runNetGun();            break;
                 }
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
