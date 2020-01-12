@@ -227,4 +227,11 @@ public strictfp class RobotPlayer {
         }
         // System.out.println(rc.getRoundMessages(turnCount-1));
     }
+
+    /**
+     * Will just move towards nearest soup
+     * return false if no soup is near
+     */
+
+
 }
