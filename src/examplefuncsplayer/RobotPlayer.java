@@ -1,12 +1,14 @@
 package examplefuncsplayer;
 import battlecode.common.*;
 
+import static battlecode.common.Direction.NORTHEAST;
+
 public strictfp class RobotPlayer {
     static RobotController rc;
 //I Rob
     static Direction[] directions = {
         Direction.NORTH,
-        Direction.NORTHEAST,
+        NORTHEAST,
         Direction.EAST,
         Direction.SOUTHEAST,
         Direction.SOUTH,
@@ -229,9 +231,38 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Will just move towards nearest soup
-     * return false if no soup is near
+     * Find all soups around
      */
+    static MapLocation findSoup(){
+        MapLocation scanLocation;
+        int searchRadius, numLayer, numSide;
+        boolean scanComplete = false;
+        numSide = 1;
+        numLayer = 0;
+        scanLocation = rc.getLocation().add(NORTHEAST); //start in top right corner
+        searchRadius = rc.getCurrentSensorRadiusSquared();
+
+        do{
+            numSide += 2;
+            for (int j = 0; j < 4; j++){
+                //go around all 4 sides of the target
+                for (int i = 0; i < numSide; i++){
+                    //scan each square on this side
+                    try{
+                        rc.senseSoup(scanLocation);
+                    }catch(GameActionException exception){
+                        //game exception
+                    }
+                }
+            }
+        }while (scanComplete == false);
+
+    }
+
+    static int getLocationRadius(){
+        RobotType thisType = rc.getType();
+        thisType.
+    }
 
 
 }

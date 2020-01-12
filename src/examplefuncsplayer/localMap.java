@@ -14,8 +14,8 @@ public class localMap {
     int[][] map;
     MapLocation currentLocation;
 
-    public localMap(MapLocation inInitLocation) {
-        this.map = new int[32][32];
+    public localMap(MapLocation inInitLocation, int sizeX, int sizeY) {
+        this.map = new int[sizeX][sizeY];
         this.currentLocation = inInitLocation;
     }
 
