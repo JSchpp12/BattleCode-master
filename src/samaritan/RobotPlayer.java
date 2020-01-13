@@ -20,8 +20,10 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static localMap map;
+    static Team myTeam;
     static Team enemy;
     static int totalSoupNearby;
+    static MapLocation hqLocation;
 
     static int goal;
 
@@ -29,6 +31,14 @@ public strictfp class RobotPlayer {
     static int NONE = 0;
     static int STARTUP = 1;
     static int BUILD = 2;
+    static int TRAVEL_TO_SOUP = 3;
+    static int MINE = 4;
+    static int DEPOSIT = 5;
+
+
+    //Miner variables
+    static MapLocation motherRefinery;
+    static MapLocation preferredDeposit;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -91,18 +101,55 @@ public strictfp class RobotPlayer {
     }
 
     static void runMiner() throws GameActionException {
-       /* tryBlockchain();
-        if (tryMove(randomDirection()))
-            System.out.println("I moved!");
-        // tryBuild(randomSpawnedByMiner(), randomDirection());
-        for (Direction dir : directions)
-            tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-        for (Direction dir : directions)
-            if (tryRefine(dir))
-                System.out.println("I refined soup! " + rc.getTeamSoup());
-        for (Direction dir : directions)
-            if (tryMine(dir))
-                System.out.println("I mined soup! " + rc.getSoupCarrying());*/
+
+        if(goal == STARTUP) {
+            System.out.println("Miner Calibrating");
+            findHQ();
+            motherRefinery = hqLocation;
+            findSoup();
+            preferredDeposit = map.closestSoup(rc.getLocation());
+            goal = TRAVEL_TO_SOUP;
+
+        } else if(goal == TRAVEL_TO_SOUP) {
+            System.out.println("My goal is to travel to soup");
+            if(rc.getLocation().equals(preferredDeposit)) {
+                System.out.println("Changing goal to MINE");
+                goal = MINE;
+            }
+            else {
+                Direction direction = rc.getLocation().directionTo(preferredDeposit);
+                tryMove(direction);
+            }
+
+        } else if(goal == MINE) {
+            if(rc.senseSoup(rc.getLocation()) <= 0) {
+                //Announce the depletion of soup
+                //Determine new preferredLocation
+                goal = DEPOSIT;
+                System.out.println("Changing goal to DEPOSIT");
+            }
+            if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit - .5*(double)GameConstants.SOUP_MINING_RATE) {
+                goal = DEPOSIT;
+                System.out.println("Changing goal to DEPOSIT");
+            }
+            else {
+                tryMine(CENTER);
+            }
+
+        } else if(goal == DEPOSIT) {
+            RobotInfo[] robots = rc.senseNearbyRobots(2, myTeam);
+            for(int i = 0; i < robots.length; i++) {
+                if(robots[i].getType() == RobotType.REFINERY || robots[i].getType() == RobotType.HQ) {
+                    tryRefine(rc.getLocation().directionTo(robots[i].getLocation()));
+                    goal = TRAVEL_TO_SOUP;
+                    System.out.println("Changing goal to TRAVEL_TO_SOUP");
+                    break;
+                }
+            }
+            if(goal == DEPOSIT) {
+                tryMove(rc.getLocation().directionTo(motherRefinery));
+            }
+        }
     }
 
     static void runRefinery() throws GameActionException {
@@ -148,15 +195,28 @@ public strictfp class RobotPlayer {
     }
 
     static void initializeRobot() throws GameActionException {
-        System.out.println("I'm a " + rc.getType() + " and I just got created!");
+        //System.out.println("I'm a " + rc.getType() + " and I just got created!");
 
         turnCount = 0;
         map = new localMap(rc.getLocation(), rc.getMapWidth(), rc.getMapHeight()); //create the local map
+        myTeam = rc.getTeam();
         enemy = rc.getTeam().opponent();
         goal = STARTUP;
     }
 
-
+    /**
+     * Saves the location of the HQ
+     */
+    static void findHQ() {
+        RobotInfo[] robots = rc.senseNearbyRobots(2, myTeam);
+        for(int i = 0; i < robots.length; i++) {
+            if(robots[i].getType() == RobotType.HQ) {
+                hqLocation = robots[i].getLocation();
+                break;
+            }
+        }
+        return;
+    }
 
 
     /**
