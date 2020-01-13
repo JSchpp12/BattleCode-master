@@ -1,7 +1,7 @@
 package examplefuncsplayer;
 import battlecode.common.*;
 
-import static battlecode.common.Direction.*; //test
+import static battlecode.common.Direction.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
