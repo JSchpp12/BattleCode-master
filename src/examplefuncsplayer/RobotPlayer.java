@@ -1,13 +1,12 @@
 package examplefuncsplayer;
 import battlecode.common.*;
 
-import static battlecode.common.Direction.NORTHEAST;
+import static battlecode.common.Direction.*;
 
 public strictfp class RobotPlayer {
     static RobotController rc;
-//I Rob
     static Direction[] directions = {
-        Direction.NORTH,
+        NORTH,
         NORTHEAST,
         Direction.EAST,
         Direction.SOUTHEAST,
@@ -20,6 +19,7 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
+    static localMap map;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -31,9 +31,8 @@ public strictfp class RobotPlayer {
         // This is the RobotController object. You use it to perform actions from this robot,
         // and to get information on its current status
         RobotPlayer.rc = rc;
-    //I jacob
         turnCount = 0;
-
+        map = new localMap(rc.getLocation(), 64, 64); //create the local map
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
         while (true) {
             turnCount += 1;
@@ -231,12 +230,26 @@ public strictfp class RobotPlayer {
     }
 
     /**
-     * Find all soups around
+     * search every space within sensor radius for soup, will update local map with locations
+     * @return return true if soup is within sensor range
      */
-    static MapLocation findSoup(){
+    static boolean findSoup(){
+        System.out.println("Initilizing Soup Scan...");
         MapLocation scanLocation;
-        int searchRadius, numLayer, numSide;
-        boolean scanComplete = false;
+        int searchRadius, numLayer, numSide, numFound, nextDirection;
+        boolean scanComplete, foundSoup;
+
+        /**
+         *Directions are as follows, used to determine which way to move searchLocation
+         * 1 - East
+         * 2 - South
+         * 3 - West
+         * 4 - North
+        */
+        nextDirection = 2;
+
+        scanComplete = false;
+        foundSoup = false; //will be returned to callee
         numSide = 1;
         numLayer = 0;
         scanLocation = rc.getLocation().add(NORTHEAST); //start in top right corner
@@ -244,25 +257,35 @@ public strictfp class RobotPlayer {
 
         do{
             numSide += 2;
+
             for (int j = 0; j < 4; j++){
                 //go around all 4 sides of the target
-                for (int i = 0; i < numSide; i++){
-                    //scan each square on this side
+                for (int i = 0; i < numSide -2; i++){
+                    //move the scan location
+                    switch(nextDirection){
+                        case 1: scanLocation.add(NORTH); break;
+                        case 2: scanLocation.add(EAST); break;
+                        case 3: scanLocation.add(SOUTH); break;
+                        case 4: scanLocation.add(WEST); break;
+                    }
+
+                    //check location for soup
                     try{
-                        rc.senseSoup(scanLocation);
+                        if(rc.senseSoup(scanLocation) != 0){
+                            System.out.println("Found Soup");
+                            foundSoup = true;
+                            map.addSoup(scanLocation.x, scanLocation.y);
+                        }
                     }catch(GameActionException exception){
                         //game exception
+                        if (exception.getType().equals(GameActionExceptionType.OUT_OF_RANGE)){
+                            scanComplete = true;
+                        }
                     }
                 }
+                nextDirection++;
             }
         }while (scanComplete == false);
-
+        return foundSoup;
     }
-
-    static int getLocationRadius(){
-        RobotType thisType = rc.getType();
-        thisType.
-    }
-
-
 }

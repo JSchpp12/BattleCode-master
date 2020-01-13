@@ -7,7 +7,7 @@ import battlecode.common.*;
  * Map Legend:
  * 1 - current location
  * 2 - HQ
- * 3 -
+ * 3 - soup
  */
 
 public class localMap {
@@ -22,4 +22,14 @@ public class localMap {
     public void updateLocation(MapLocation inNewLocation) {
         this.currentLocation = inNewLocation;
     }
+
+    /**
+     * Add soup to the local map
+     * @param locX x location of soup
+     * @param locY y location of soup
+     */
+    public void addSoup(int locX, int locY){
+        map[locX][locY] = 3; 
+    }
+
 }
