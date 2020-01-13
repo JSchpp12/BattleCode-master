@@ -1,7 +1,5 @@
 package examplefuncsplayer;
 import battlecode.common.*;
-//TEST
-import static battlecode.common.Direction.*; //test test2 tes3
 
 import static battlecode.common.Direction.*;
 
@@ -22,6 +20,7 @@ public strictfp class RobotPlayer {
 
     static int turnCount;
     static localMap map;
+    static Team enemy;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -30,12 +29,8 @@ public strictfp class RobotPlayer {
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
-        // This is the RobotController object. You use it to perform actions from this robot,
-        // and to get information on its current status
-        RobotPlayer.rc = rc;
-        turnCount = 0;
-        map = new localMap(rc.getLocation(), 64, 64); //create the local map
-        System.out.println("I'm a " + rc.getType() + " and I just got created!");
+        initializeRobot();
+
         while (true) {
             turnCount += 1;
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
@@ -67,12 +62,12 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-        for (Direction dir : directions)
-            tryBuild(RobotType.MINER, dir);
+        //for (Direction dir : directions)
+            //tryBuild(RobotType.MINER, dir);
     }
 
     static void runMiner() throws GameActionException {
-        tryBlockchain();
+       /* tryBlockchain();
         if (tryMove(randomDirection()))
             System.out.println("I moved!");
         // tryBuild(randomSpawnedByMiner(), randomDirection());
@@ -83,7 +78,7 @@ public strictfp class RobotPlayer {
                 System.out.println("I refined soup! " + rc.getTeamSoup());
         for (Direction dir : directions)
             if (tryMine(dir))
-                System.out.println("I mined soup! " + rc.getSoupCarrying());
+                System.out.println("I mined soup! " + rc.getSoupCarrying());*/
     }
 
     static void runRefinery() throws GameActionException {
@@ -99,8 +94,8 @@ public strictfp class RobotPlayer {
     }
 
     static void runFulfillmentCenter() throws GameActionException {
-        for (Direction dir : directions)
-            tryBuild(RobotType.DELIVERY_DRONE, dir);
+        /*for (Direction dir : directions)
+            tryBuild(RobotType.DELIVERY_DRONE, dir);*/
     }
 
     static void runLandscaper() throws GameActionException {
@@ -108,7 +103,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runDeliveryDrone() throws GameActionException {
-        Team enemy = rc.getTeam().opponent();
+        /*
         if (!rc.isCurrentlyHoldingUnit()) {
             // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
             RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED, enemy);
@@ -121,12 +116,23 @@ public strictfp class RobotPlayer {
         } else {
             // No close robots, so search for robots within sight radius
             tryMove(randomDirection());
-        }
+        }*/
     }
 
     static void runNetGun() throws GameActionException {
 
     }
+
+    static void initializeRobot() {
+        RobotPlayer.rc = rc;
+        turnCount = 0;
+        map = new localMap(rc.getLocation(), 64, 64); //create the local map
+        System.out.println("I'm a " + rc.getType() + " and I just got created!");
+        enemy = rc.getTeam().opponent();
+    }
+
+
+
 
     /**
      * Returns a random Direction.
