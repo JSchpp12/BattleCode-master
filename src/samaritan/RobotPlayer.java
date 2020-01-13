@@ -1,0 +1,359 @@
+package samaritan;
+import battlecode.common.*;
+
+import static battlecode.common.Direction.*;
+
+public strictfp class RobotPlayer {
+    static RobotController rc;
+    static Direction[] directions = {
+        Direction.NORTH,
+        Direction.NORTHEAST,
+        Direction.EAST,
+        Direction.SOUTHEAST,
+        Direction.SOUTH,
+        Direction.SOUTHWEST,
+        Direction.WEST,
+        Direction.NORTHWEST
+    };
+    static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
+            RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
+
+    static int turnCount;
+    static localMap map;
+    static Team enemy;
+    static int totalSoupNearby;
+
+    static int goal;
+
+    //Goals - make this more elegant
+    static int NONE = 0;
+    static int STARTUP = 1;
+    static int BUILD = 2;
+
+    /**
+     * run() is the method that is called when a robot is instantiated in the Battlecode world.
+     * If this method returns, the robot dies!
+     **/
+    @SuppressWarnings("unused")
+    public static void run(RobotController rc) throws GameActionException {
+
+        RobotPlayer.rc = rc;
+        initializeRobot();
+
+        while (true) {
+            turnCount += 1;
+            // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
+            try {
+                // Here, we've separated the controls into a different method for each RobotType.
+                // You can add the missing ones or rewrite this into your own control structure.
+
+                switch (rc.getType()) {
+                    case MINER:              runMiner();             break;
+                    case LANDSCAPER:         runLandscaper();        break;
+                    case DELIVERY_DRONE:     runDeliveryDrone();     break;
+
+                    case HQ:                 runHQ();                break;
+
+                    case REFINERY:           runRefinery();          break;
+                    case NET_GUN:            runNetGun();            break;
+                    case VAPORATOR:          runVaporator();         break;
+                    case DESIGN_SCHOOL:      runDesignSchool();      break;
+                    case FULFILLMENT_CENTER: runFulfillmentCenter(); break;
+                }
+                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                Clock.yield();
+
+            } catch (Exception e) {
+                System.out.println(rc.getType() + " Exception");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    static void runHQ() throws GameActionException {
+
+        if(goal == STARTUP) {
+            System.out.println("HQ Initiating Startup!");
+            findSoup();
+            totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
+            MapLocation closestSoup = map.closestSoup(rc.getLocation());
+            System.out.println("Closest Soup: " + closestSoup.x + ", " + closestSoup.y);
+            Direction dir = rc.getLocation().directionTo(closestSoup);
+            forceBuild(RobotType.MINER, dir);
+            goal = NONE;
+        }
+
+        else if(goal == BUILD) {
+            MapLocation closestSoup = map.closestSoup(rc.getLocation());
+            Direction dir = rc.getLocation().directionTo(closestSoup);
+            forceBuild(RobotType.MINER, dir);
+        }
+    }
+
+    static void runMiner() throws GameActionException {
+       /* tryBlockchain();
+        if (tryMove(randomDirection()))
+            System.out.println("I moved!");
+        // tryBuild(randomSpawnedByMiner(), randomDirection());
+        for (Direction dir : directions)
+            tryBuild(RobotType.FULFILLMENT_CENTER, dir);
+        for (Direction dir : directions)
+            if (tryRefine(dir))
+                System.out.println("I refined soup! " + rc.getTeamSoup());
+        for (Direction dir : directions)
+            if (tryMine(dir))
+                System.out.println("I mined soup! " + rc.getSoupCarrying());*/
+    }
+
+    static void runRefinery() throws GameActionException {
+        // System.out.println("Pollution: " + rc.sensePollution(rc.getLocation()));
+    }
+
+    static void runVaporator() throws GameActionException {
+
+    }
+
+    static void runDesignSchool() throws GameActionException {
+
+    }
+
+    static void runFulfillmentCenter() throws GameActionException {
+        /*for (Direction dir : directions)
+            tryBuild(RobotType.DELIVERY_DRONE, dir);*/
+    }
+
+    static void runLandscaper() throws GameActionException {
+
+    }
+
+    static void runDeliveryDrone() throws GameActionException {
+        /*
+        if (!rc.isCurrentlyHoldingUnit()) {
+            // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
+            RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED, enemy);
+
+            if (robots.length > 0) {
+                // Pick up a first robot within range
+                rc.pickUpUnit(robots[0].getID());
+                System.out.println("I picked up " + robots[0].getID() + "!");
+            }
+        } else {
+            // No close robots, so search for robots within sight radius
+            tryMove(randomDirection());
+        }*/
+    }
+
+    static void runNetGun() throws GameActionException {
+
+    }
+
+    static void initializeRobot() throws GameActionException {
+        System.out.println("I'm a " + rc.getType() + " and I just got created!");
+
+        turnCount = 0;
+        map = new localMap(rc.getLocation(), rc.getMapWidth(), rc.getMapHeight()); //create the local map
+        enemy = rc.getTeam().opponent();
+        goal = STARTUP;
+    }
+
+
+
+
+    /**
+     * Returns a random Direction.
+     *
+     * @return a random Direction
+     */
+    static Direction randomDirection() {
+        return directions[(int) (Math.random() * directions.length)];
+    }
+
+    /**
+     * Returns a random RobotType spawned by miners.
+     *
+     * @return a random RobotType
+     */
+    static RobotType randomSpawnedByMiner() {
+        return spawnedByMiner[(int) (Math.random() * spawnedByMiner.length)];
+    }
+
+    static boolean tryMove() throws GameActionException {
+        for (Direction dir : directions)
+            if (tryMove(dir))
+                return true;
+        return false;
+        // MapLocation loc = rc.getLocation();
+        // if (loc.x < 10 && loc.x < loc.y)
+        //     return tryMove(Direction.EAST);
+        // else if (loc.x < 10)
+        //     return tryMove(Direction.SOUTH);
+        // else if (loc.x > loc.y)
+        //     return tryMove(Direction.WEST);
+        // else
+        //     return tryMove(Direction.NORTH);
+    }
+
+    /**
+     * Attempts to move in a given direction.
+     *
+     * @param dir The intended direction of movement
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    static boolean tryMove(Direction dir) throws GameActionException {
+        // System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
+        if (rc.isReady() && rc.canMove(dir)) {
+            rc.move(dir);
+            return true;
+        } else return false;
+    }
+
+    /**
+     * Iterates through every direction closest to preferred direction to ensure a successful build
+     */
+    static void forceBuild(RobotType type, Direction dir) throws GameActionException {
+        if(!rc.isReady()) return;
+
+        MapLocation location = rc.getLocation().add(dir);
+        if(rc.canBuildRobot(type, dir) && !rc.senseFlooding(location)) {
+            rc.buildRobot(type, dir);
+            return;
+        }
+        Direction direction;
+        for(int i = 0; i < 4; i++) {
+            direction = dir;
+            for(int j = 0; j <= i; j++) {
+                direction = direction.rotateLeft();
+            }
+            location = rc.getLocation().add(direction);
+            if(rc.canBuildRobot(type, direction) && !rc.senseFlooding(location)) {
+                rc.buildRobot(type, direction);
+                return;
+            }
+
+            direction = dir;
+            for(int j = 0; j <= i; j++) {
+                direction = direction.rotateRight();
+            }
+            location = rc.getLocation().add(direction);
+            if(rc.canBuildRobot(type, direction) && !rc.senseFlooding(location)) {
+                rc.buildRobot(type, direction);
+                return;
+            }
+        }
+    }
+
+    /**
+     * Attempts to mine soup in a given direction.
+     *
+     * @param dir The intended direction of mining
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    static boolean tryMine(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canMineSoup(dir)) {
+            rc.mineSoup(dir);
+            return true;
+        } else return false;
+    }
+
+    /**
+     * Attempts to refine soup in a given direction.
+     *
+     * @param dir The intended direction of refining
+     * @return true if a move was performed
+     * @throws GameActionException
+     */
+    static boolean tryRefine(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canDepositSoup(dir)) {
+            rc.depositSoup(dir, rc.getSoupCarrying());
+            return true;
+        } else return false;
+    }
+
+
+    static void tryBlockchain() throws GameActionException {
+        if (turnCount < 3) {
+            int[] message = new int[7];
+            for (int i = 0; i < 7; i++) {
+                message[i] = 123;
+            }
+            if (rc.canSubmitTransaction(message, 10))
+                rc.submitTransaction(message, 10);
+        }
+        // System.out.println(rc.getRoundMessages(turnCount-1));
+    }
+
+    /**
+     * search every space within sensor radius for soup, will update local map with locations
+     * Also finds elevation of every tile within radius
+     */
+    static void findSoup() throws GameActionException {
+        System.out.println("Initializing Soup Scan...");
+        MapLocation scanLocation;
+        boolean scanComplete = false;
+
+        scanLocation = rc.getLocation();
+
+        //Find starting location
+        while(rc.canSenseLocation(scanLocation.add(NORTHEAST)) && rc.onTheMap(scanLocation.add(NORTHEAST))) {
+            scanLocation = scanLocation.add(NORTHEAST);
+        }
+        while(rc.canSenseLocation(scanLocation.add(EAST)) && rc.onTheMap(scanLocation.add(EAST))) {
+            scanLocation = scanLocation.add(EAST);
+        }
+        while(rc.canSenseLocation(scanLocation.add(NORTH)) && rc.onTheMap(scanLocation.add(NORTH))) {
+            scanLocation = scanLocation.add(NORTH);
+        }
+        //System.out.println("Starting location: " + scanLocation.x + ", " + scanLocation.y);
+
+
+        Direction[] algorythim = {SOUTH, SOUTHWEST, WEST, NORTHWEST, NORTH, NORTHWEST, WEST, SOUTHWEST};
+        int index = 0;
+        while(!scanComplete) {
+            boolean nextLocationFound = false;
+
+            //check location for soup
+            //System.out.println("Checking for soup at: " + scanLocation.x + ", " + scanLocation.y);
+            try{
+                if(rc.senseSoup(scanLocation) != 0){
+                    //System.out.println("Found Soup");
+                    map.addSoup(scanLocation, rc.senseSoup(scanLocation));
+                }
+            }catch(GameActionException exception){
+                //game exception
+                if (exception.getType().equals(GameActionExceptionType.OUT_OF_RANGE)){
+                    scanComplete = true;
+                    System.out.println("ERR SoupScan OutOfBounds - " + exception.getMessage());
+                }else{
+                    scanComplete = true;
+                    System.out.println("ERR SoupScan - " + exception.getMessage());
+                }
+            }
+
+            //Record Elevation
+            map.addTile(scanLocation.x, scanLocation.y, rc.senseElevation(scanLocation));
+
+            //Find next scan location
+            for(int i = 0; i < 4; i++) {
+                if(rc.canSenseLocation(scanLocation.add(algorythim[index])) && rc.onTheMap(scanLocation.add(algorythim[index]))) {
+                    scanLocation = scanLocation.add(algorythim[index]);
+                    if(index != 0 && index != 4) index += 4-i;
+                    nextLocationFound = true;
+                    break;
+                }
+                index++;
+            }
+
+            if(index == 8) index = 0;
+            if(!nextLocationFound) scanComplete = true;
+        }
+
+
+
+    }
+
+
+
+
+}
