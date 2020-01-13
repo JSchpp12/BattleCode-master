@@ -1,10 +1,9 @@
 package examplefuncsplayer;
 import battlecode.common.*;
 
-import static battlecode.common.Direction.*;
-
 public strictfp class RobotPlayer {
     static RobotController rc;
+
     static Direction[] directions = {
         Direction.NORTH,
         Direction.NORTHEAST,
@@ -19,14 +18,6 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
-    static localMap map;
-    static Team enemy;
-
-    static int goal;
-
-    //Goals - make this more elegant
-    static int NONE = 0;
-    static int STARTUP = 1;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -35,28 +26,32 @@ public strictfp class RobotPlayer {
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
 
-        initializeRobot();
+        // This is the RobotController object. You use it to perform actions from this robot,
+        // and to get information on its current status.
+        RobotPlayer.rc = rc;
 
+        turnCount = 0;
+
+        //System.out.println("I'm a " + rc.getType() + " and I just got created!");
         while (true) {
             turnCount += 1;
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
-
+                System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
                 switch (rc.getType()) {
-                    case MINER:              runMiner();             break;
-                    case LANDSCAPER:         runLandscaper();        break;
-                    case DELIVERY_DRONE:     runDeliveryDrone();     break;
-
                     case HQ:                 runHQ();                break;
-
+                    case MINER:              runMiner();             break;
                     case REFINERY:           runRefinery();          break;
-                    case NET_GUN:            runNetGun();            break;
                     case VAPORATOR:          runVaporator();         break;
                     case DESIGN_SCHOOL:      runDesignSchool();      break;
                     case FULFILLMENT_CENTER: runFulfillmentCenter(); break;
+                    case LANDSCAPER:         runLandscaper();        break;
+                    case DELIVERY_DRONE:     runDeliveryDrone();     break;
+                    case NET_GUN:            runNetGun();            break;
                 }
+
                 // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
                 Clock.yield();
 
@@ -68,25 +63,24 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-
-        if(goal == STARTUP)
-            for (Direction dir : directions)
-                tryBuild(RobotType.MINER, dir);
+        for (Direction dir : directions)
+            tryBuild(RobotType.MINER, dir);
     }
 
     static void runMiner() throws GameActionException {
-       /* tryBlockchain();
+        tryBlockchain();
+        tryMove(randomDirection());
         if (tryMove(randomDirection()))
-            System.out.println("I moved!");
+            //System.out.println("I moved!");
         // tryBuild(randomSpawnedByMiner(), randomDirection());
         for (Direction dir : directions)
             tryBuild(RobotType.FULFILLMENT_CENTER, dir);
-        for (Direction dir : directions)
-            if (tryRefine(dir))
-                System.out.println("I refined soup! " + rc.getTeamSoup());
-        for (Direction dir : directions)
-            if (tryMine(dir))
-                System.out.println("I mined soup! " + rc.getSoupCarrying());*/
+        //for (Direction dir : directions)
+            //if (tryRefine(dir))
+                //System.out.println("I refined soup! " + rc.getTeamSoup());
+        //for (Direction dir : directions)
+            //if (tryMine(dir))
+                //System.out.println("I mined soup! " + rc.getSoupCarrying());
     }
 
     static void runRefinery() throws GameActionException {
@@ -102,8 +96,8 @@ public strictfp class RobotPlayer {
     }
 
     static void runFulfillmentCenter() throws GameActionException {
-        /*for (Direction dir : directions)
-            tryBuild(RobotType.DELIVERY_DRONE, dir);*/
+        for (Direction dir : directions)
+            tryBuild(RobotType.DELIVERY_DRONE, dir);
     }
 
     static void runLandscaper() throws GameActionException {
@@ -111,7 +105,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runDeliveryDrone() throws GameActionException {
-        /*
+        Team enemy = rc.getTeam().opponent();
         if (!rc.isCurrentlyHoldingUnit()) {
             // See if there are any enemy robots within striking range (distance 1 from lumberjack's radius)
             RobotInfo[] robots = rc.senseNearbyRobots(GameConstants.DELIVERY_DRONE_PICKUP_RADIUS_SQUARED, enemy);
@@ -119,29 +113,17 @@ public strictfp class RobotPlayer {
             if (robots.length > 0) {
                 // Pick up a first robot within range
                 rc.pickUpUnit(robots[0].getID());
-                System.out.println("I picked up " + robots[0].getID() + "!");
+                //System.out.println("I picked up " + robots[0].getID() + "!");
             }
         } else {
             // No close robots, so search for robots within sight radius
             tryMove(randomDirection());
-        }*/
+        }
     }
 
     static void runNetGun() throws GameActionException {
 
     }
-
-    static void initializeRobot() {
-        RobotPlayer.rc = rc;
-        turnCount = 0;
-        map = new localMap(rc.getLocation(), 64, 64); //create the local map
-        System.out.println("I'm a " + rc.getType() + " and I just got created!");
-        enemy = rc.getTeam().opponent();
-        goal = STARTUP;
-    }
-
-
-
 
     /**
      * Returns a random Direction.
@@ -246,68 +228,5 @@ public strictfp class RobotPlayer {
                 rc.submitTransaction(message, 10);
         }
         // System.out.println(rc.getRoundMessages(turnCount-1));
-    }
-
-    /**
-     * search every space within sensor radius for soup, will update local map with locations
-     * @return return true if soup is within sensor range
-     */
-    static boolean findSoup(){
-        System.out.println("Initializing Soup Scan...");
-        MapLocation scanLocation;
-        int searchRadius, numLayer, numSide, numFound, nextDirection;
-        boolean scanComplete, foundSoup;
-
-        /**
-         *Directions are as follows, used to determine which way to move searchLocation
-         * 1 - East
-         * 2 - South
-         * 3 - West
-         * 4 - North
-        */
-        nextDirection = 2;
-
-        scanComplete = false;
-        foundSoup = false; //will be returned to callee
-        numSide = 1;
-        numLayer = 0;
-        scanLocation = rc.getLocation().add(NORTHEAST); //start in top right corner
-        searchRadius = rc.getCurrentSensorRadiusSquared();
-
-        do{
-            numSide += 2;
-
-            for (int j = 0; j < 4; j++){
-                //go around all 4 sides of the target
-                for (int i = 0; i < numSide -2; i++){
-                    //move the scan location
-                    switch(nextDirection){
-                        case 1: scanLocation.add(NORTH); break;
-                        case 2: scanLocation.add(EAST); break;
-                        case 3: scanLocation.add(SOUTH); break;
-                        case 4: scanLocation.add(WEST); break;
-                    }
-
-                    //check location for soup
-                    try{
-                        if(rc.senseSoup(scanLocation) != 0){
-                            System.out.println("Found Soup");
-                            foundSoup = true;
-                            map.addSoup(scanLocation.x, scanLocation.y);
-                        }
-                    }catch(GameActionException exception){
-                        //game exception
-                        if (exception.getType().equals(GameActionExceptionType.OUT_OF_RANGE)){
-                            scanComplete = false;
-                        }else{
-                            scanComplete = true;
-                            System.out.println("ERR SoupScan - " + exception.getMessage());
-                        }
-                    }
-                }
-                nextDirection++;
-            }
-        }while (scanComplete == false);
-        return foundSoup;
     }
 }
