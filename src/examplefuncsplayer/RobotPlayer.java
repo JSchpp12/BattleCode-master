@@ -22,6 +22,12 @@ public strictfp class RobotPlayer {
     static localMap map;
     static Team enemy;
 
+    static int goal;
+
+    //Goals - make this more elegant
+    static int NONE = 0;
+    static int STARTUP = 1;
+
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
      * If this method returns, the robot dies!
@@ -37,7 +43,7 @@ public strictfp class RobotPlayer {
             try {
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
-                System.out.println("I'm a " + rc.getType() + "! Location " + rc.getLocation());
+
                 switch (rc.getType()) {
                     case MINER:              runMiner();             break;
                     case LANDSCAPER:         runLandscaper();        break;
@@ -62,8 +68,10 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-        //for (Direction dir : directions)
-            //tryBuild(RobotType.MINER, dir);
+
+        if(goal == STARTUP)
+            for (Direction dir : directions)
+                tryBuild(RobotType.MINER, dir);
     }
 
     static void runMiner() throws GameActionException {
@@ -129,6 +137,7 @@ public strictfp class RobotPlayer {
         map = new localMap(rc.getLocation(), 64, 64); //create the local map
         System.out.println("I'm a " + rc.getType() + " and I just got created!");
         enemy = rc.getTeam().opponent();
+        goal = STARTUP;
     }
 
 
