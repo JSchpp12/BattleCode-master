@@ -34,6 +34,7 @@ public strictfp class RobotPlayer {
     static int TRAVEL_TO_SOUP = 3;
     static int MINE = 4;
     static int DEPOSIT = 5;
+    static int EXPLORE = 6;
 
 
     //Miner variables
@@ -113,7 +114,7 @@ public strictfp class RobotPlayer {
         } else if(goal == TRAVEL_TO_SOUP) {
             System.out.println("My goal is to travel to soup");
             if(rc.getLocation().equals(preferredDeposit)) {
-                System.out.println("Changing goal to MINE");
+                //System.out.println("Changing goal to MINE");
                 goal = MINE;
             }
             else {
@@ -123,12 +124,14 @@ public strictfp class RobotPlayer {
 
         } else if(goal == MINE) {
             if(rc.senseSoup(rc.getLocation()) <= 0) {
+                map.removeSoup(rc.getLocation());
                 //Announce the depletion of soup
-                //Determine new preferredLocation
-                goal = DEPOSIT;
+                updateSoupDeposit();
+                goal = TRAVEL_TO_SOUP;
+                tryMove(rc.getLocation().directionTo(preferredDeposit));
                 System.out.println("Changing goal to DEPOSIT");
             }
-            if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit - .5*(double)GameConstants.SOUP_MINING_RATE) {
+            else if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit - .5*(double)GameConstants.SOUP_MINING_RATE) {
                 goal = DEPOSIT;
                 System.out.println("Changing goal to DEPOSIT");
             }
@@ -218,6 +221,16 @@ public strictfp class RobotPlayer {
         return;
     }
 
+    /**
+     * Finds a new closest deposit one its preferredDeposit runs out
+     */
+    static void updateSoupDeposit() {
+        System.out.println("Changing preferredSDeposit");
+        preferredDeposit = map.closestSoup(rc.getLocation());
+        if(preferredDeposit == null)
+            goal = EXPLORE;
+    }
+
 
     /**
      * Returns a random Direction.
@@ -264,6 +277,7 @@ public strictfp class RobotPlayer {
         // System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.isReady() && rc.canMove(dir)) {
             rc.move(dir);
+            findSoup();
             return true;
         } else return false;
     }
@@ -349,7 +363,7 @@ public strictfp class RobotPlayer {
      * Also finds elevation of every tile within radius
      */
     static void findSoup() throws GameActionException {
-        System.out.println("Initializing Soup Scan...");
+        //System.out.println("Initializing Soup Scan...");
         MapLocation scanLocation;
         boolean scanComplete = false;
 
@@ -376,7 +390,7 @@ public strictfp class RobotPlayer {
             //check location for soup
             //System.out.println("Checking for soup at: " + scanLocation.x + ", " + scanLocation.y);
             try{
-                if(rc.senseSoup(scanLocation) != 0){
+                if(rc.senseSoup(scanLocation) >= .6*(double) GameConstants.SOUP_MINING_RATE){
                     //System.out.println("Found Soup");
                     map.addSoup(scanLocation, rc.senseSoup(scanLocation));
                 }

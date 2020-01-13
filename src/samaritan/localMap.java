@@ -40,6 +40,15 @@ public class localMap {
         soupLocation.add(location);
     }
 
+    public void removeSoup(MapLocation location) {
+        for(int i = 0; i < soupLocation.size(); i++) {
+            if(((MapLocation) soupLocation.get(i)).equals(location)) {
+                soupLocation.remove(i);
+                soupAmount.remove(i);
+            }
+        }
+    }
+
     public MapLocation closestSoup(MapLocation myLocation) {
         int distance;
         int closest = 100000;
