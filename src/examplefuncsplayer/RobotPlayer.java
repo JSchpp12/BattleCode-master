@@ -1,5 +1,7 @@
 package examplefuncsplayer;
 import battlecode.common.*;
+//TEST
+import static battlecode.common.Direction.*; //test
 
 import static battlecode.common.Direction.*;
 
