@@ -234,7 +234,7 @@ public strictfp class RobotPlayer {
      * @return return true if soup is within sensor range
      */
     static boolean findSoup(){
-        System.out.println("Initilizing Soup Scan...");
+        System.out.println("Initializing Soup Scan...");
         MapLocation scanLocation;
         int searchRadius, numLayer, numSide, numFound, nextDirection;
         boolean scanComplete, foundSoup;
