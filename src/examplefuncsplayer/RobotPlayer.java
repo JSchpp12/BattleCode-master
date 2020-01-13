@@ -279,7 +279,10 @@ public strictfp class RobotPlayer {
                     }catch(GameActionException exception){
                         //game exception
                         if (exception.getType().equals(GameActionExceptionType.OUT_OF_RANGE)){
+                            scanComplete = false;
+                        }else{
                             scanComplete = true;
+                            System.out.println("ERR SoupScan - " + exception.getMessage());
                         }
                     }
                 }
