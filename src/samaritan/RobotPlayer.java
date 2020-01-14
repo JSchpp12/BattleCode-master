@@ -66,9 +66,7 @@ public strictfp class RobotPlayer {
                     case MINER:              runMiner();             break;
                     case LANDSCAPER:         runLandscaper();        break;
                     case DELIVERY_DRONE:     runDeliveryDrone();     break;
-
                     case HQ:                 runHQ();                break;
-
                     case REFINERY:           runRefinery();          break;
                     case NET_GUN:            runNetGun();            break;
                     case VAPORATOR:          runVaporator();         break;
@@ -86,12 +84,14 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
+        MapLocation closestSoup;
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!");
             findSoup();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
             //MapLocation closestSoup = map.closestSoup(rc.getLocation());
 
+            closestSoup = findClosestSoup(rc.getLocation());
             System.out.println("Closest Soup: " + closestSoup.x + ", " + closestSoup.y);
             Direction dir = rc.getLocation().directionTo(closestSoup);
             forceBuild(RobotType.MINER, dir);
@@ -100,7 +100,7 @@ public strictfp class RobotPlayer {
 
         else if(goal == BUILD_MINER) {
             if(turnCount > 15) {
-                MapLocation closestSoup = map.closestSoup(rc.getLocation());
+                closestSoup = findClosestSoup(rc.getLocation());
                 Direction dir = rc.getLocation().directionTo(closestSoup);
                 forceBuild(RobotType.MINER, dir.opposite());
                 goal = NONE;
@@ -118,7 +118,8 @@ public strictfp class RobotPlayer {
             findHQ();
             motherRefinery = hqLocation;
             findSoup();
-            preferredDeposit = map.closestSoup(rc.getLocation());
+            //preferredDeposit = map.closestSoup(rc.getLocation());
+            preferredDeposit = findClosestSoup(rc.getLocation());
             if(rc.getRobotCount() == 2) {
                 goal = TRAVEL_TO_SOUP;
             } else if(rc.getRobotCount() == 3){
@@ -140,7 +141,7 @@ public strictfp class RobotPlayer {
 
         } else if(goal == MINE) {
             if(rc.senseSoup(rc.getLocation()) <= 0) {
-                map.removeSoup(rc.getLocation());
+                map.removeSoup(rc.getLocation(), 1000); //---------------------------------------HOW MUCH SOUP TO REMOVE -------------------------------------------
                 //Announce the depletion of soup
                 updateSoupDeposit();
                 goal = TRAVEL_TO_SOUP;
@@ -259,9 +260,12 @@ public strictfp class RobotPlayer {
 
     static void initializeRobot() throws GameActionException {
         //System.out.println("I'm a " + rc.getType() + " and I just got created!");
+        char internRobotId;
+        internRobotId = convertRobotTypeToChar(rc.getType());
 
         turnCount = 0;
-        map = new localMap(rc.getLocation(), rc.getMapWidth(), rc.getMapHeight()); //create the local map
+
+        map = new localMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
         enemy = rc.getTeam().opponent();
         goal = STARTUP;
@@ -286,7 +290,7 @@ public strictfp class RobotPlayer {
      */
     static void updateSoupDeposit() {
         System.out.println("Changing preferredSDeposit");
-        preferredDeposit = map.closestSoup(rc.getLocation());
+        preferredDeposit = findClosestSoup(rc.getLocation());
         if(preferredDeposit == null) {
             goal = BUILD_VAPORATOR;
             System.out.println("Building a Vaporator");
@@ -296,7 +300,6 @@ public strictfp class RobotPlayer {
 
     /**
      * Returns a random Direction.
-     *
      * @return a random Direction
      */
     static Direction randomDirection() {
@@ -305,7 +308,6 @@ public strictfp class RobotPlayer {
 
     /**
      * Returns a random RobotType spawned by miners.
-     *
      * @return a random RobotType
      */
     static RobotType randomSpawnedByMiner() {
@@ -330,7 +332,6 @@ public strictfp class RobotPlayer {
 
     /**
      * Attempts to move in a given direction.
-     *
      * @param dir The intended direction of movement
      * @return true if a move was performed
      * @throws GameActionException
@@ -499,4 +500,46 @@ public strictfp class RobotPlayer {
             if(!nextLocationFound) scanComplete = true;
         }
     }
+
+    /**
+     * Convert robotType into char for storage in map
+     * @param inRobotType robot type to be converted
+     * @return
+     */
+    public static char convertRobotTypeToChar(RobotType inRobotType){
+        switch(inRobotType){
+            case HQ : return 'D';
+            case COW: return 'E';
+            case MINER: return 'F';
+            case NET_GUN: return 'G';
+            case REFINERY: return 'H';
+            case VAPORATOR: return 'I';
+            case LANDSCAPER: return 'J';
+            case DESIGN_SCHOOL: return 'K';
+            case DELIVERY_DRONE: return 'L';
+            case FULFILLMENT_CENTER: return 'M';
+            default: return 'A';
+        }
+    }
+
+    /**
+     * Will find closest soup deposit from given location, can use either localMap or scanners based on pollution level
+     * @return mapLocation of closest deposit
+     */
+    public static MapLocation findClosestSoup(MapLocation currentLocation){
+        //temporary
+        int x, y;
+        MapLocation closest;
+        System.out.println("Finding closest soup deposit...");
+
+        x = currentLocation.x;
+        y = currentLocation.y;
+
+        closest = new MapLocation(x, y);
+
+        System.out.println("Closest soup is at (" + x + " , " + y + ")");
+        return closest;
+
+    }
+
 }

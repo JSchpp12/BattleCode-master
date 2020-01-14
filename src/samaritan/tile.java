@@ -5,12 +5,21 @@ package samaritan;
  * B - water
  * C - soup
  * D - HQ
- * E -
+ * E - COW
+ * F - MINER
+ * G - NET_GUN
+ * H - REFINERY
+ * I - VAPORATOR
+ * J - LANDSCAPER
+ * K - DESIGN_SCHOOL
+ * L - DELIVERY_DRONE
+ * M - FULFILLMENT_CENTER
  */
 
 public class tile {
     private int x, y, amt, elevation, pollution;
     private char locationType;
+    private boolean isEnemy;
     public tile(int inX, int inY){
         this.x = inX;
         this.y = inY;
