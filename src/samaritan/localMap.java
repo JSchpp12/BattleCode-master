@@ -4,11 +4,6 @@ import battlecode.common.*;
 public class localMap {
     tile[][] map;
     int currentX, currentY;
-    /*
-    MapLocation currentLocation;
-    ArrayList soupAmount = new ArrayList();
-    ArrayList soupLocation = new ArrayList();
-    */
 
     /**
      * Create a new localMap object -- used when robot is created
@@ -74,17 +69,6 @@ public class localMap {
         this.map[location.x][location.y] = new tile(location.x, location.y, 'C', soupAmt);
     }
 
-    /*
-    public void removeSoup(MapLocation location) {
-        for(int i = 0; i < soupLocation.size(); i++) {
-            if(((MapLocation) soupLocation.get(i)).equals(location)) {
-                soupLocation.remove(i);
-                soupAmount.remove(i);
-            }
-        }
-    }
-    */
-
     /**
      * Remove an amount of soup from a location, and if necessary will clear the space
      * @param location location of soup to be updated
@@ -104,31 +88,6 @@ public class localMap {
         }
     }
 
-    /*
-    public MapLocation closestSoup(MapLocation myLocation) {
-        int distance;
-        int closest = 100000;
-        MapLocation location = null;
-        for(int i = 0; i < soupLocation.size(); i++) {
-            distance = myLocation.distanceSquaredTo((MapLocation) soupLocation.get(i));
-            if(distance < closest) {
-                location = (MapLocation) soupLocation.get(i);
-                closest = distance;
-            }
-        }
-        return location;
-    }
-
-    public int totalSoup(MapLocation myLocation, int radius) {
-        int soup = 0;
-        for(int i = 0; i < soupLocation.size(); i++) {
-             if(myLocation.distanceSquaredTo((MapLocation) soupLocation.get(i)) <= radius)
-                 soup += (int) soupAmount.get(i);
-        }
-        return soup;
-    }
-*/
-
     /**
      * clears location of its location data
      * @param xLoc x coordinate of target location
@@ -147,4 +106,8 @@ public class localMap {
 
         this.map[x][y].setLocationType(newLocData);
     }
+
+    public char getLocationData(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getLocationType();}
+    public int getLocationElevation(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getElevation();}
+    public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getAmt();}
 }
