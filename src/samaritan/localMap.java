@@ -1,18 +1,8 @@
 package samaritan;
 import battlecode.common.*;
-import java.util.ArrayList;
-
-/**
- * contains local form of map -- ONLY 32x32 right now
- * Robot initial location will be set to the middle of the 2d table
- * Map Legend:
- * -1 - current location
- * -2 - HQ
- * positive number - soup
- */
 
 public class localMap {
-    mapLocation[][] map;
+    tile[][] map;
     int currentX, currentY;
     /*
     MapLocation currentLocation;
@@ -21,7 +11,7 @@ public class localMap {
     */
 
     /**
-     * Create a new localMap object
+     * Create a new localMap object -- used when robot is created
      * @param inInitLocation mapLocation object containing the location information to be written
      * @param locType object type that is being stored on the map, should be a robot or building at this point
      * @param sizeX size of the map along the x-axis
@@ -30,15 +20,15 @@ public class localMap {
     public localMap(MapLocation inInitLocation, char locType, int sizeX, int sizeY) {
         int x = inInitLocation.x;
         int y = inInitLocation.y;
-        this.map = new mapLocation[sizeX][sizeY];
-        this.map[inInitLocation.x][inInitLocation.y] = new mapLocation(x, y, locType);
+        this.map = new tile[sizeX][sizeY];
+        this.map[inInitLocation.x][inInitLocation.y] = new tile(x, y, locType);
     }
 
     /**
      * Move the robot to a new location
      * @param inNewLocation location the robot is moving to
      */
-    public void updateLocation(MapLocation inNewLocation) {
+    public void moveRobotLocation(MapLocation inNewLocation) {
         int elevation;
         char robotType;
         System.out.println("Moving location from : (" + this.currentX + " , " + this.currentY + ")" );
@@ -59,7 +49,7 @@ public class localMap {
             this.map[this.currentX][this.currentY].setLocationType(robotType);
         }else{
             //create new map tile, as old does not exists
-            this.map[this.currentX][this.currentY] = new mapLocation(this.currentX, this.currentY, robotType );
+            this.map[this.currentX][this.currentY] = new tile(this.currentX, this.currentY, robotType );
         }
         System.out.println("---Move complete---");
     }
@@ -72,7 +62,7 @@ public class localMap {
      */
     public void addTile(int inX, int inY, int inElevation) {
         //map[locX][locY] = elevation;
-        map[inX][inY] = new mapLocation(inX, inY, inElevation);
+        map[inX][inY] = new tile(inX, inY, inElevation);
     }
 
     /**
@@ -81,7 +71,7 @@ public class localMap {
      * @param soupAmt new amount of soup
      */
     public void addSoup(MapLocation location, int soupAmt) {
-        this.map[location.x][location.y] = new mapLocation(location.x, location.y, 'C', soupAmt);
+        this.map[location.x][location.y] = new tile(location.x, location.y, 'C', soupAmt);
     }
 
     /*
@@ -140,10 +130,21 @@ public class localMap {
 */
 
     /**
-     * clears location of its locData
+     * clears location of its location data
      * @param xLoc x coordinate of target location
      * @param yLoc y coordinate of target location
      */
     public void clearLocation(int xLoc, int yLoc){this.map[xLoc][yLoc].setLocationType('A');}
 
+    /**
+     * update location data at a specific coordinate
+     * @param inLocation MapLocation of target tile
+     * @param newLocData new location data to be stored
+     */
+    public void updateLocationData(MapLocation inLocation, char newLocData){
+        int x = inLocation.x;
+        int y = inLocation.y;
+
+        this.map[x][y].setLocationType(newLocData);
+    }
 }

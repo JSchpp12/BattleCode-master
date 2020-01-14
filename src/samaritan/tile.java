@@ -8,32 +8,32 @@ package samaritan;
  * E -
  */
 
-public class mapLocation {
+public class tile {
     private int x, y, amt, elevation;
     private char locationType;
-    public mapLocation(int inX, int inY){
+    public tile(int inX, int inY){
         this.x = inX;
         this.y = inY;
         this.locationType = 'A'; //empty space
     }
-    public mapLocation(int inX, int inY, int inElevation){
+    public tile(int inX, int inY, int inElevation){
         this.x = inX;
         this.y = inY;
         this.elevation = inElevation;
         this.locationType = 'A'; //empty space
     }
-    public mapLocation(int inX, int inY, char inLocType){
+    public tile(int inX, int inY, char inLocType){
         this.x = inX;
         this.y = inY;
         this.locationType = inLocType;
     }
-    public mapLocation(int inX, int inY, char inLocType, int inAmt){
+    public tile(int inX, int inY, char inLocType, int inAmt){
         this.x = inX;
         this.y = inY;
         this.locationType = inLocType;
         this.amt = inAmt;
     }
-    public mapLocation(int inX, int inY, char inLocType, int inAmt, int inElevation){
+    public tile(int inX, int inY, char inLocType, int inAmt, int inElevation){
         this.x = inX;
         this.y = inY;
         this.locationType = inLocType;
