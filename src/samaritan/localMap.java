@@ -40,11 +40,13 @@ public class localMap {
 
     /**
      * Add soup to the local map
-     * @param locX x location of soup
-     * @param locY y location of soup
+     * @param inX x location of soup
+     * @param inY y location of soup
+     * @param inElevation the elevation of the tile
      */
-    public void addTile(int locX, int locY, int elevation) {
-        map[locX][locY] = elevation;
+    public void addTile(int inX, int inY, int inElevation) {
+        //map[locX][locY] = elevation;
+        map[inX][inY] = new mapLocation(inX, inY, inElevation);
     }
 
     public void addSoup(MapLocation location, int soup) {
@@ -52,9 +54,12 @@ public class localMap {
         soupAmount.add(soup);
         soupLocation.add(location);
         */
-
+        int x = location.x;
+        int y = location.y;
+        this.map[x][y] = new mapLocation(x, y, 'C', soup);
     }
 
+    /*
     public void removeSoup(MapLocation location) {
         for(int i = 0; i < soupLocation.size(); i++) {
             if(((MapLocation) soupLocation.get(i)).equals(location)) {
@@ -62,6 +67,13 @@ public class localMap {
                 soupAmount.remove(i);
             }
         }
+    }
+    */
+    public void removeSoup(MapLocation location){
+        int x = location.x;
+        int y = location.y;
+        int elevation = this.map[x][y].getElevation();
+        this.map[x][y] = new mapLocation(x, y, elevation); //creates empty map location
     }
 
     public MapLocation closestSoup(MapLocation myLocation) {
