@@ -9,7 +9,7 @@ package samaritan;
  */
 
 public class tile {
-    private int x, y, amt, elevation;
+    private int x, y, amt, elevation, pollution;
     private char locationType;
     public tile(int inX, int inY){
         this.x = inX;
@@ -31,13 +31,21 @@ public class tile {
         this.x = inX;
         this.y = inY;
         this.locationType = inLocType;
-        this.amt = inAmt;
+        if (inLocType == 'C'){
+            this.amt = inAmt;
+        }else{
+            this.pollution = inAmt;
+        }
     }
     public tile(int inX, int inY, char inLocType, int inAmt, int inElevation){
         this.x = inX;
         this.y = inY;
         this.locationType = inLocType;
-        this.amt = inAmt;
+        if (inLocType == 'C'){
+            this.amt = inAmt;
+        }else{
+            this.pollution = inAmt;
+        }
         this.elevation = inElevation;
     }
 
@@ -45,12 +53,11 @@ public class tile {
     public int getY(){return this.y;}
     public int getAmt(){return this.amt;}
     public int getElevation(){return this.elevation;}
+    public int getPollution(){return this.pollution;}
     public char getLocationType(){return this.locationType;}
 
-    public void setAmt(int inAmt){this.amt = inAmt;}
+    public void setSoupAmt(int inAmt){this.amt = inAmt;}
     public void setElevation(int newElevation){this.elevation = newElevation;}
+    public void setPollution(int inPollution){this.pollution = inPollution;}
     public void setLocationType(char inLocType){this.locationType = inLocType;}
-
-
-
 }

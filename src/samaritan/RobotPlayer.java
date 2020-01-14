@@ -86,12 +86,12 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!");
             findSoup();
-            totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
-            MapLocation closestSoup = map.closestSoup(rc.getLocation());
+            //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
+            //MapLocation closestSoup = map.closestSoup(rc.getLocation());
+
             System.out.println("Closest Soup: " + closestSoup.x + ", " + closestSoup.y);
             Direction dir = rc.getLocation().directionTo(closestSoup);
             forceBuild(RobotType.MINER, dir);
@@ -427,15 +427,18 @@ public strictfp class RobotPlayer {
         // System.out.println(rc.getRoundMessages(turnCount-1));
     }
 
+
     /**
      * search every space within sensor radius for soup, will update local map with locations
      * Also finds elevation of every tile within radius
      */
     static void findSoup() throws GameActionException {
         //System.out.println("Initializing Soup Scan...");
+        int elevation;
         MapLocation scanLocation;
-        boolean scanComplete = false;
+        boolean scanComplete, nextLocationFound;
 
+        scanComplete = false;
         scanLocation = rc.getLocation();
 
         //Find starting location
@@ -454,7 +457,7 @@ public strictfp class RobotPlayer {
         Direction[] algorythim = {SOUTH, SOUTHWEST, WEST, NORTHWEST, NORTH, NORTHWEST, WEST, SOUTHWEST};
         int index = 0;
         while(!scanComplete) {
-            boolean nextLocationFound = false;
+            nextLocationFound = false;
 
             //check location for soup
             //System.out.println("Checking for soup at: " + scanLocation.x + ", " + scanLocation.y);
@@ -463,8 +466,14 @@ public strictfp class RobotPlayer {
                     //System.out.println("Found Soup");
                     map.addSoup(scanLocation, rc.senseSoup(scanLocation));
                 }
+                elevation = rc.senseElevation(scanLocation); //get elevation data
+                map.recordElevation(scanLocation, elevation); //store elevation data
+
             }catch(GameActionException exception){
                 //game exception
+                scanComplete = true;
+                System.out.println("ERR SoupScan - " + exception.getMessage());
+                /*
                 if (exception.getType().equals(GameActionExceptionType.OUT_OF_RANGE)){
                     scanComplete = true;
                     System.out.println("ERR SoupScan OutOfBounds - " + exception.getMessage());
@@ -472,10 +481,8 @@ public strictfp class RobotPlayer {
                     scanComplete = true;
                     System.out.println("ERR SoupScan - " + exception.getMessage());
                 }
+                 */
             }
-
-            //Record Elevation
-            map.addTile(scanLocation.x, scanLocation.y, rc.senseElevation(scanLocation));
 
             //Find next scan location
             for(int i = 0; i < 4; i++) {
@@ -491,12 +498,5 @@ public strictfp class RobotPlayer {
             if(index == 8) index = 0;
             if(!nextLocationFound) scanComplete = true;
         }
-
-
-
     }
-
-
-
-
 }

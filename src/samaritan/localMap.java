@@ -1,5 +1,6 @@
 package samaritan;
 import battlecode.common.*;
+import javafx.scene.control.cell.TextFieldListCell;
 
 public class localMap {
     tile[][] map;
@@ -50,14 +51,12 @@ public class localMap {
     }
 
     /**
-     * Add soup to the local map
+     * Create blank tile object at location
      * @param inX x location of soup
      * @param inY y location of soup
-     * @param inElevation the elevation of the tile
      */
-    public void addTile(int inX, int inY, int inElevation) {
-        //map[locX][locY] = elevation;
-        map[inX][inY] = new tile(inX, inY, inElevation);
+    public void addTile(int inX, int inY) {
+        map[inX][inY] = new tile(inX, inY);
     }
 
     /**
@@ -66,7 +65,15 @@ public class localMap {
      * @param soupAmt new amount of soup
      */
     public void addSoup(MapLocation location, int soupAmt) {
-        this.map[location.x][location.y] = new tile(location.x, location.y, 'C', soupAmt);
+        int x, y;
+        x = location.x;
+        y = location.y;
+        if (this.map[x][y] != null) {
+            this.map[x][y].setLocationType('C');
+            this.map[x][y].setSoupAmt(soupAmt);
+        }else{
+            this.map[location.x][location.y] = new tile(location.x, location.y, 'C', soupAmt);
+        }
     }
 
     /**
@@ -84,7 +91,7 @@ public class localMap {
             clearLocation(location.x, location.y);
         }else{
             //update amount of soup at location
-            this.map[location.x][location.y].setAmt(amt);
+            this.map[location.x][location.y].setSoupAmt(amt);
         }
     }
 
@@ -100,11 +107,46 @@ public class localMap {
      * @param inLocation MapLocation of target tile
      * @param newLocData new location data to be stored
      */
-    public void updateLocationData(MapLocation inLocation, char newLocData){
+    public void recordLocationData(MapLocation inLocation, char newLocData){
         int x = inLocation.x;
         int y = inLocation.y;
 
         this.map[x][y].setLocationType(newLocData);
+    }
+
+    /**
+     * Store elevation data at a specific location
+     * @param inLocation target location
+     * @param inElevation elevation data to be stored
+     */
+    public void recordElevation(MapLocation inLocation, int inElevation){
+        int x, y;
+        x = inLocation.x;
+        y = inLocation.y;
+
+        if (this.map[x][y] != null){
+            //tile object exists, update/record elevation data
+            this.map[x][y].setElevation(inElevation);
+        }else{
+            //tile object does not exist, create a new one
+            this.map[x][y] = new tile(x,y,inElevation);
+        }
+    }
+
+    /**
+     * Update the amount of pollution at a location -- will throw exception if tile does not exist
+     * @param inLocation target location
+     * @param inPollution amount of pollution to be recorded at that location
+     */
+    public void recordPollution(MapLocation inLocation, int inPollution) throws NullPointerException{
+        int x, y;
+        x = inLocation.x;
+        y = inLocation.y;
+        if (this.map[x][y] != null){
+            this.map[x][y].setPollution(inPollution);
+        }else{
+            throw new NullPointerException("Tile Does Not Exist");
+        }
     }
 
     public char getLocationData(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getLocationType();}
