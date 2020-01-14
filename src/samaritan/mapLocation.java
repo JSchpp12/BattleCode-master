@@ -46,4 +46,11 @@ public class mapLocation {
     public int getAmt(){return this.amt;}
     public int getElevation(){return this.elevation;}
     public char getLocationType(){return this.locationType;}
+
+    public void setAmt(int inAmt){this.amt = inAmt;}
+    public void setElevation(int newElevation){this.elevation = newElevation;}
+    public void setLocationType(char inLocType){this.locationType = inLocType;}
+
+
+
 }

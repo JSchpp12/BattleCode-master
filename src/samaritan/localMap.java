@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 public class localMap {
     mapLocation[][] map;
+    int currentX, currentY;
     /*
     MapLocation currentLocation;
     ArrayList soupAmount = new ArrayList();
@@ -33,9 +34,34 @@ public class localMap {
         this.map[inInitLocation.x][inInitLocation.y] = new mapLocation(x, y, locType);
     }
 
-    //move location from one place to the next
+    /**
+     * Move the robot to a new location
+     * @param inNewLocation location the robot is moving to
+     */
     public void updateLocation(MapLocation inNewLocation) {
-        this.currentLocation = inNewLocation;
+        int elevation;
+        char robotType;
+        System.out.println("Moving location from : (" + this.currentX + " , " + this.currentY + ")" );
+        System.out.println("To: ( " + inNewLocation.x + " , " + inNewLocation.y + ")");
+
+        robotType = this.map[this.currentX][this.currentY].getLocationType(); //get the robot type
+        clearLocation(this.currentX, this.currentY); //clear previous location
+
+        //move current location to new location
+        this.currentX = inNewLocation.x;
+        this.currentY = inNewLocation.y;
+
+        //check if new tile object exists in memory
+        if (this.map[this.currentX][this.currentY] != null){
+            System.out.println("Creating new tile object...");
+
+            //new location tile exists, save location information
+            this.map[this.currentX][this.currentY].setLocationType(robotType);
+        }else{
+            //create new map tile, as old does not exists
+            this.map[this.currentX][this.currentY] = new mapLocation(this.currentX, this.currentY, robotType );
+        }
+        System.out.println("---Move complete---");
     }
 
     /**
@@ -49,14 +75,13 @@ public class localMap {
         map[inX][inY] = new mapLocation(inX, inY, inElevation);
     }
 
-    public void addSoup(MapLocation location, int soup) {
-        /*
-        soupAmount.add(soup);
-        soupLocation.add(location);
-        */
-        int x = location.x;
-        int y = location.y;
-        this.map[x][y] = new mapLocation(x, y, 'C', soup);
+    /**
+     * add soup to the map
+     * @param location location of the soup
+     * @param soupAmt new amount of soup
+     */
+    public void addSoup(MapLocation location, int soupAmt) {
+        this.map[location.x][location.y] = new mapLocation(location.x, location.y, 'C', soupAmt);
     }
 
     /*
@@ -69,13 +94,27 @@ public class localMap {
         }
     }
     */
-    public void removeSoup(MapLocation location){
-        int x = location.x;
-        int y = location.y;
-        int elevation = this.map[x][y].getElevation();
-        this.map[x][y] = new mapLocation(x, y, elevation); //creates empty map location
+
+    /**
+     * Remove an amount of soup from a location, and if necessary will clear the space
+     * @param location location of soup to be updated
+     * @param soupRemoved amount of soup that is being removed
+     */
+    public void removeSoup(MapLocation location, int soupRemoved){
+        int amt;
+        amt = this.map[location.x][location.y].getAmt();
+
+        amt -= soupRemoved;
+        if (amt <= 0){
+            //no soup remains, clear spot
+            clearLocation(location.x, location.y);
+        }else{
+            //update amount of soup at location
+            this.map[location.x][location.y].setAmt(amt);
+        }
     }
 
+    /*
     public MapLocation closestSoup(MapLocation myLocation) {
         int distance;
         int closest = 100000;
@@ -98,5 +137,13 @@ public class localMap {
         }
         return soup;
     }
+*/
+
+    /**
+     * clears location of its locData
+     * @param xLoc x coordinate of target location
+     * @param yLoc y coordinate of target location
+     */
+    public void clearLocation(int xLoc, int yLoc){this.map[xLoc][yLoc].setLocationType('A');}
 
 }
