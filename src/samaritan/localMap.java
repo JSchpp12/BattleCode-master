@@ -12,16 +12,28 @@ import java.util.ArrayList;
  */
 
 public class localMap {
-    int[][] map;
+    mapLocation[][] map;
+    /*
     MapLocation currentLocation;
     ArrayList soupAmount = new ArrayList();
     ArrayList soupLocation = new ArrayList();
+    */
 
-    public localMap(MapLocation inInitLocation, int sizeX, int sizeY) {
-        this.map = new int[sizeX][sizeY];
-        this.currentLocation = inInitLocation;
+    /**
+     * Create a new localMap object
+     * @param inInitLocation mapLocation object containing the location information to be written
+     * @param locType object type that is being stored on the map, should be a robot or building at this point
+     * @param sizeX size of the map along the x-axis
+     * @param sizeY size of the map along the y-axis
+     */
+    public localMap(MapLocation inInitLocation, char locType, int sizeX, int sizeY) {
+        int x = inInitLocation.x;
+        int y = inInitLocation.y;
+        this.map = new mapLocation[sizeX][sizeY];
+        this.map[inInitLocation.x][inInitLocation.y] = new mapLocation(x, y, locType);
     }
 
+    //move location from one place to the next
     public void updateLocation(MapLocation inNewLocation) {
         this.currentLocation = inNewLocation;
     }
@@ -36,8 +48,11 @@ public class localMap {
     }
 
     public void addSoup(MapLocation location, int soup) {
+        /*
         soupAmount.add(soup);
         soupLocation.add(location);
+        */
+
     }
 
     public void removeSoup(MapLocation location) {
