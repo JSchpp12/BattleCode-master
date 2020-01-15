@@ -192,4 +192,5 @@ public class LocalMap {
 
     //Returns the distance squared between
     public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
+
 }

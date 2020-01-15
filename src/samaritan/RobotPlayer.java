@@ -524,4 +524,12 @@ public strictfp class RobotPlayer {
     //Returns the distance squared between
     public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
 
+    public void printLocalMap(){
+        for (int i = 0; i< rc.getMapHeight(); i++){
+            for (int j=0; j<rc.getMapWidth(); j++){
+                System.out.print(map.getLocationData(new MapLocation(j,i)));
+            }
+            System.out.println(); //ENTER key for new line
+        }
+    }
 }
