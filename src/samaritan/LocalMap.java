@@ -58,7 +58,7 @@ public class LocalMap {
      * @param inX x location of soup
      * @param inY y location of soup
      */
-    public void addTile(int inX, int inY, int inTurnCount) {
+    public void addTile(int inX, int inY) {
         map[inX][inY] = new Tile(inX, inY);
     }
 
@@ -76,6 +76,7 @@ public class LocalMap {
             this.map[x][y].setSoupAmt(soupAmt); //set soup amount
             System.out.println("Modifying Soup Tile");
         }else{
+            addTile(location.x, location.y);
             this.map[location.x][location.y] = new Tile(location.x, location.y); //create new tile
             this.map[location.x][location.y].setSoup(true); //make tile contain soup
             this.map[location.x][location.y].setSoupAmt(soupAmt); //set soup amount
@@ -118,6 +119,9 @@ public class LocalMap {
         int x = inLocation.x;
         int y = inLocation.y;
 
+        if (this.map[x][y] == null){
+            addTile(x, y);
+        }
         this.map[x][y].setLocationType(newLocData);
     }
 
@@ -136,7 +140,7 @@ public class LocalMap {
             this.map[x][y].setElevation(inElevation);
         }else{
             //tile object does not exist, create a new one
-            this.map[x][y] = new Tile(x,y);
+            addTile(x, y);
             this.map[x][y].setElevation(inElevation);
         }
     }
@@ -168,9 +172,23 @@ public class LocalMap {
         }
 
     }
-    public int getLocationElevation(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getElevation();}
-    public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getSoupAmt();}
-    public int getUpdateTime(MapLocation inLocation) {return this.map[inLocation.x][inLocation.y].getUpdateTime(); }
+    public int getLocationElevation(MapLocation inLocation){
+        return this.map[inLocation.x][inLocation.y].getElevation();
+    }
+    public int getlocationAmtSoup(MapLocation inLocation){
+        return this.map[inLocation.x][inLocation.y].getSoupAmt();
+    }
+    public int getUpdateTime(MapLocation inLocation) {
+        return this.map[inLocation.x][inLocation.y].getUpdateTime();
+    }
+
+    public boolean hasBeenScanned(MapLocation inLocation){
+        if (this.map[inLocation.x][inLocation.y] != null){
+            return true;
+        }else{
+            return false;
+        }
+    }
 
     public Tile closestSoup(MapLocation location) {
         //System.out.println("Running Closest Soup");
