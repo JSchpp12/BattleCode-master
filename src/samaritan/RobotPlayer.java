@@ -19,7 +19,7 @@ public strictfp class RobotPlayer {
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
 
     static int turnCount;
-    static localMap map;
+    static LocalMap map;
     static Team myTeam;
     static Team enemy;
     static int totalSoupNearby;
@@ -84,7 +84,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-        tile closestSoup;
+        Tile closestSoup;
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!");
             findSoup();
@@ -257,7 +257,7 @@ public strictfp class RobotPlayer {
 
         turnCount = 0;
 
-        map = new localMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
+        map = new LocalMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
         enemy = rc.getTeam().opponent();
         goal = STARTUP;
@@ -515,13 +515,13 @@ public strictfp class RobotPlayer {
     }
 
     //turns a tile into a MapLocation for easy processing
-    public static MapLocation toMapLocation(tile t) {
+    public static MapLocation toMapLocation(Tile t) {
         if(t == null)
             return null;
         return new MapLocation(t.getX(), t.getY());
     }
 
     //Returns the distance squared between
-    public static int distanceBetween(tile t1, tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
+    public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
 
 }

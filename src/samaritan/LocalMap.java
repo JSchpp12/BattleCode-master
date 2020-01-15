@@ -1,30 +1,30 @@
 package samaritan;
 import battlecode.common.*;
-import javafx.scene.control.cell.TextFieldListCell;
 
-public class localMap {
-    tile[][] map;
+public class LocalMap {
+    Tile[][] map;
     int currentX, currentY;
 
     /**
      * Create a new localMap object -- used when robot is created
      * @param inInitLocation mapLocation object containing the location information to be written
-     * @param locType object type that is being stored on the map, should be a robot or building at this point
+     * @param robotType object type that is being stored on the map, should be a robot or building at this point
      * @param sizeX size of the map along the x-axis
      * @param sizeY size of the map along the y-axis
      */
-    public localMap(MapLocation inInitLocation, char locType, int sizeX, int sizeY) {
+    public LocalMap(MapLocation inInitLocation, char robotType, int sizeX, int sizeY) {
         int x = inInitLocation.x;
         int y = inInitLocation.y;
-        this.map = new tile[sizeX][sizeY];
-        this.map[inInitLocation.x][inInitLocation.y] = new tile(x, y, locType);
+        this.map = new Tile[sizeX][sizeY];
+        this.map[inInitLocation.x][inInitLocation.y] = new Tile(x, y); //create new tile
+        this.map[inInitLocation.x][inInitLocation.y].setLocationType(robotType); //set robot at the new tile
     }
 
     /**
      * Move the robot to a new location
      * @param inNewLocation location the robot is moving to
      */
-    public void moveRobotLocation(MapLocation inNewLocation) {
+    public void moveRobotLocation(MapLocation inNewLocation, int inTurnCount) {
         int elevation;
         char robotType;
         System.out.println("Moving location from : (" + this.currentX + " , " + this.currentY + ")" );
@@ -45,7 +45,10 @@ public class localMap {
             this.map[this.currentX][this.currentY].setLocationType(robotType);
         }else{
             //create new map tile, as old does not exists
-            this.map[this.currentX][this.currentY] = new tile(this.currentX, this.currentY, robotType );
+            this.map[this.currentX][this.currentY] = new Tile(this.currentX, this.currentY);
+
+            //set location data to robot type for the current tile
+            this.map[this.currentX][this.currentY].setLocationType(robotType);
         }
         System.out.println("---Move complete---");
     }
@@ -55,8 +58,8 @@ public class localMap {
      * @param inX x location of soup
      * @param inY y location of soup
      */
-    public void addTile(int inX, int inY) {
-        map[inX][inY] = new tile(inX, inY);
+    public void addTile(int inX, int inY, int inTurnCount) {
+        map[inX][inY] = new Tile(inX, inY);
     }
 
     /**
@@ -64,16 +67,18 @@ public class localMap {
      * @param location location of the soup
      * @param soupAmt new amount of soup
      */
-    public void addSoup(MapLocation location, int soupAmt) {
+    public void addSoup(MapLocation location, int soupAmt, int inTurnCount) {
         int x, y;
         x = location.x;
         y = location.y;
         if (this.map[x][y] != null) {
-            this.map[x][y].setLocationType('C');
-            this.map[x][y].setSoupAmt(soupAmt);
+            this.map[x][y].setSoup(true); //set soup
+            this.map[x][y].setSoupAmt(soupAmt); //set soup amount
             System.out.println("Modifying Soup Tile");
         }else{
-            this.map[location.x][location.y] = new tile(location.x, location.y, 'C', soupAmt);
+            this.map[location.x][location.y] = new Tile(location.x, location.y); //create new tile
+            this.map[location.x][location.y].setSoup(true); //make tile contain soup
+            this.map[location.x][location.y].setSoupAmt(soupAmt); //set soup amount
             System.out.println("Creating new soup tile");
         }
     }
@@ -85,7 +90,7 @@ public class localMap {
      */
     public void removeSoup(MapLocation location, int soupRemoved){
         int amt;
-        amt = this.map[location.x][location.y].getAmt();
+        amt = this.map[location.x][location.y].getSoupAmt();
 
         amt -= soupRemoved;
         if (amt <= 0){
@@ -131,34 +136,39 @@ public class localMap {
             this.map[x][y].setElevation(inElevation);
         }else{
             //tile object does not exist, create a new one
-            this.map[x][y] = new tile(x,y,inElevation);
+            this.map[x][y] = new Tile(x,y);
+            this.map[x][y].setElevation(inElevation);
         }
     }
+
 
     /**
      * Update the amount of pollution at a location -- will throw exception if tile does not exist
      * @param inLocation target location
-     * @param inPollution amount of pollution to be recorded at that location
+    // * @param inPollution amount of pollution to be recorded at that location
      */
-    public void recordPollution(MapLocation inLocation, int inPollution) throws NullPointerException {
+    /*
+    public void recordPollution(MapLocation inLocation, int inPollution, int inTurnCount) throws NullPointerException {
         int x, y;
         x = inLocation.x;
         y = inLocation.y;
         if (this.map[x][y] != null){
-            this.map[x][y].setPollution(inPollution);
+            this.map[x][y].setPollution();
         }else{
             throw new NullPointerException("Tile Does Not Exist");
         }
     }
+    */
 
     public char getLocationData(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getLocationType();}
     public int getLocationElevation(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getElevation();}
-    public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getAmt();}
+    public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getSoupAmt();}
+    public int getUpdateTime(MapLocation inLocation) {return this.map[inLocation.x][inLocation.y].getUpdateTime(); }
 
-    public tile closestSoup(MapLocation location) {
+    public Tile closestSoup(MapLocation location) {
         //System.out.println("Running Closest Soup");
         int closestDistance = 100000;
-        tile closestSoup = null;
+        Tile closestSoup = null;
         for(int i = 0; i < map.length; i++) {
             for(int j = 0; j < map[i].length; j++) {
                 if(map[i][j] == null) continue;
@@ -174,12 +184,12 @@ public class localMap {
     }
 
     //turns a tile into a MapLocation for easy processing
-    public static MapLocation toMapLocation(tile t) {
+    public static MapLocation toMapLocation(Tile t) {
         if(t == null)
             return null;
         return new MapLocation(t.getX(), t.getY());
     }
 
     //Returns the distance squared between
-    public static int distanceBetween(tile t1, tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
+    public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
 }
