@@ -90,18 +90,9 @@ public class LocalMap {
      * @param location location of soup to be updated
      * @param soupRemoved amount of soup that is being removed
      */
-    public void removeSoup(MapLocation location, int soupRemoved){
-        int amt;
-        amt = this.map[location.x][location.y].getSoupAmt();
-
-        amt -= soupRemoved;
-        if (amt <= 0){
-            //no soup remains, clear spot
-            clearLocation(location.x, location.y);
-        }else{
-            //update amount of soup at location
-            this.map[location.x][location.y].setSoupAmt(amt);
-        }
+    public void removeSoup(MapLocation location){
+        this.map[location.x][location.y].setSoup(false);
+        this.map[location.x][location.y].setSoupAmt(0);
     }
 
     /**

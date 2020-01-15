@@ -157,7 +157,7 @@ public strictfp class RobotPlayer {
 
         } if(goal == MINE) {
             if(rc.senseSoup(preferredDeposit) <= 0) {
-                //map.clearLocation(rc.getLocation().x, rc.getLocation().y);
+                map.;
                 //Announce the depletion of soup
                 goal = TRAVEL_TO_SOUP;
                 updateSoupDeposit();
