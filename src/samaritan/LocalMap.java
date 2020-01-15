@@ -67,7 +67,7 @@ public class LocalMap {
      * @param location location of the soup
      * @param soupAmt new amount of soup
      */
-    public void addSoup(MapLocation location, int soupAmt, int inTurnCount) {
+    public void addSoup(MapLocation location, int soupAmt) {
         int x, y;
         x = location.x;
         y = location.y;
