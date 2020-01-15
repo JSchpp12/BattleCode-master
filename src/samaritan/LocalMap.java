@@ -88,7 +88,6 @@ public class LocalMap {
     /**
      * Remove an amount of soup from a location, and if necessary will clear the space
      * @param location location of soup to be updated
-     * @param soupRemoved amount of soup that is being removed
      */
     public void removeSoup(MapLocation location){
         this.map[location.x][location.y].setSoup(false);
