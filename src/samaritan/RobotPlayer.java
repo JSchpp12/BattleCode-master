@@ -84,42 +84,34 @@ public strictfp class RobotPlayer {
     }
 
     static void runHQ() throws GameActionException {
-        MapLocation closestSoup;
+        tile closestSoup;
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!");
             findSoup();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
-            //MapLocation closestSoup = map.closestSoup(rc.getLocation());
+            closestSoup = map.closestSoup(rc.getLocation());
 
-            closestSoup = findClosestSoup(rc.getLocation());
-            System.out.println("Closest Soup: " + closestSoup.x + ", " + closestSoup.y);
-            Direction dir = rc.getLocation().directionTo(closestSoup);
+            System.out.println("Closest Soup: " + closestSoup.getX() + ", " + closestSoup.getY());
+            Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
             forceBuild(RobotType.MINER, dir);
             goal = BUILD_MINER;
         }
 
         else if(goal == BUILD_MINER) {
-            if(turnCount > 15) {
-                closestSoup = findClosestSoup(rc.getLocation());
-                Direction dir = rc.getLocation().directionTo(closestSoup);
-                forceBuild(RobotType.MINER, dir.opposite());
-                goal = NONE;
-            }
+
         }
     }
 
     static void runMiner() throws GameActionException {
-        while(!rc.isReady()) {
-            Clock.yield();
-        }
 
         if(goal == STARTUP) {
+            while(rc.getCooldownTurns() >= 1) Clock.yield(); //This silences the robot during its 10 turns of being built
+
             System.out.println("Miner Calibrating");
             findHQ();
             motherRefinery = hqLocation;
             findSoup();
-            //preferredDeposit = map.closestSoup(rc.getLocation());
-            preferredDeposit = findClosestSoup(rc.getLocation());
+            preferredDeposit = toMapLocation(map.closestSoup(rc.getLocation()));
             if(rc.getRobotCount() == 2) {
                 goal = TRAVEL_TO_SOUP;
             } else if(rc.getRobotCount() == 3){
@@ -290,7 +282,7 @@ public strictfp class RobotPlayer {
      */
     static void updateSoupDeposit() {
         System.out.println("Changing preferredSDeposit");
-        preferredDeposit = findClosestSoup(rc.getLocation());
+        preferredDeposit = toMapLocation(map.closestSoup(rc.getLocation()));
         if(preferredDeposit == null) {
             goal = BUILD_VAPORATOR;
             System.out.println("Building a Vaporator");
@@ -434,7 +426,7 @@ public strictfp class RobotPlayer {
      * Also finds elevation of every tile within radius
      */
     static void findSoup() throws GameActionException {
-        //System.out.println("Initializing Soup Scan...");
+        System.out.println("Initializing Soup Scan...");
         int elevation;
         MapLocation scanLocation;
         boolean scanComplete, nextLocationFound;
@@ -463,8 +455,8 @@ public strictfp class RobotPlayer {
             //check location for soup
             //System.out.println("Checking for soup at: " + scanLocation.x + ", " + scanLocation.y);
             try{
-                if(rc.senseSoup(scanLocation) >= .6*(double) GameConstants.SOUP_MINING_RATE){
-                    //System.out.println("Found Soup");
+                if(rc.senseSoup(scanLocation) > 0){
+                    System.out.println("Found Soup");
                     map.addSoup(scanLocation, rc.senseSoup(scanLocation));
                 }
                 elevation = rc.senseElevation(scanLocation); //get elevation data
@@ -522,24 +514,14 @@ public strictfp class RobotPlayer {
         }
     }
 
-    /**
-     * Will find closest soup deposit from given location, can use either localMap or scanners based on pollution level
-     * @return mapLocation of closest deposit
-     */
-    public static MapLocation findClosestSoup(MapLocation currentLocation){
-        //temporary
-        int x, y;
-        MapLocation closest;
-        System.out.println("Finding closest soup deposit...");
-
-        x = currentLocation.x;
-        y = currentLocation.y;
-
-        closest = new MapLocation(x, y);
-
-        System.out.println("Closest soup is at (" + x + " , " + y + ")");
-        return closest;
-
+    //turns a tile into a MapLocation for easy processing
+    public static MapLocation toMapLocation(tile t) {
+        if(t == null)
+            return null;
+        return new MapLocation(t.getX(), t.getY());
     }
+
+    //Returns the distance squared between
+    public static int distanceBetween(tile t1, tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
 
 }

@@ -71,8 +71,10 @@ public class localMap {
         if (this.map[x][y] != null) {
             this.map[x][y].setLocationType('C');
             this.map[x][y].setSoupAmt(soupAmt);
+            System.out.println("Modifying Soup Tile");
         }else{
             this.map[location.x][location.y] = new tile(location.x, location.y, 'C', soupAmt);
+            System.out.println("Creating new soup tile");
         }
     }
 
@@ -138,7 +140,7 @@ public class localMap {
      * @param inLocation target location
      * @param inPollution amount of pollution to be recorded at that location
      */
-    public void recordPollution(MapLocation inLocation, int inPollution) throws NullPointerException{
+    public void recordPollution(MapLocation inLocation, int inPollution) throws NullPointerException {
         int x, y;
         x = inLocation.x;
         y = inLocation.y;
@@ -152,4 +154,34 @@ public class localMap {
     public char getLocationData(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getLocationType();}
     public int getLocationElevation(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getElevation();}
     public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getAmt();}
+
+    public tile closestSoup(MapLocation location) {
+        System.out.println("Running CLosest Soup");
+        int closestDistance = 100000;
+        tile closestSoup = null;
+        for(int i = 0; i < map.length; i++) {
+            for(int j = 0; j < map[i].length; j++) {
+                if(map[i][j] == null) break;
+                System.out.println("Checking " + i + ", " + j);
+                if('C' == map[i][j].getLocationType()) {
+                    System.out.println("C found");
+                if(location.distanceSquaredTo(toMapLocation(map[i][j])) < closestDistance) {
+                    System.out.println("Soup found at " + i + ", " + j);
+                    closestSoup = map[i][j];
+                    closestDistance = location.distanceSquaredTo(toMapLocation(map[i][j]));
+                }}
+            }
+        }
+        return closestSoup;
+    }
+
+    //turns a tile into a MapLocation for easy processing
+    public static MapLocation toMapLocation(tile t) {
+        if(t == null)
+            return null;
+        return new MapLocation(t.getX(), t.getY());
+    }
+
+    //Returns the distance squared between
+    public static int distanceBetween(tile t1, tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
 }
