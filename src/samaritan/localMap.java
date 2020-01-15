@@ -173,6 +173,7 @@ public class localMap {
             }
         }
         return closestSoup;
+
     }
 
     //turns a tile into a MapLocation for easy processing
@@ -184,4 +185,7 @@ public class localMap {
 
     //Returns the distance squared between
     public static int distanceBetween(tile t1, tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
+    public int check() {
+        return 343;
+    }
 }
