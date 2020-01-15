@@ -156,20 +156,17 @@ public class localMap {
     public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getAmt();}
 
     public tile closestSoup(MapLocation location) {
-        System.out.println("Running CLosest Soup");
+        //System.out.println("Running Closest Soup");
         int closestDistance = 100000;
         tile closestSoup = null;
         for(int i = 0; i < map.length; i++) {
             for(int j = 0; j < map[i].length; j++) {
-                if(map[i][j] == null) break;
-                System.out.println("Checking " + i + ", " + j);
-                if('C' == map[i][j].getLocationType()) {
-                    System.out.println("C found");
-                if(location.distanceSquaredTo(toMapLocation(map[i][j])) < closestDistance) {
+                if(map[i][j] == null) continue;
+                if('C' == map[i][j].getLocationType() && location.distanceSquaredTo(toMapLocation(map[i][j])) < closestDistance) {
                     System.out.println("Soup found at " + i + ", " + j);
                     closestSoup = map[i][j];
                     closestDistance = location.distanceSquaredTo(toMapLocation(map[i][j]));
-                }}
+                }
             }
         }
         return closestSoup;
@@ -185,7 +182,4 @@ public class localMap {
 
     //Returns the distance squared between
     public static int distanceBetween(tile t1, tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
-    public int check() {
-        return 343;
-    }
 }

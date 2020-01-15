@@ -89,7 +89,6 @@ public strictfp class RobotPlayer {
             System.out.println("HQ Initiating Startup!");
             findSoup();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
-            System.out.println("Number from map: " + map.check());
             closestSoup = map.closestSoup(rc.getLocation());
 
             System.out.println("Closest Soup: " + closestSoup.getX() + ", " + closestSoup.getY());
