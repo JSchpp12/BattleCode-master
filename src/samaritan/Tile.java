@@ -5,7 +5,7 @@ import battlecode.common.RobotController;
 import static samaritan.RobotPlayer.rc;
 
 /**Location Types:
- * A - empty
+ * - - empty
  * B - water
  * D - HQ
  * E - COW
@@ -26,12 +26,13 @@ public class Tile {
     public Tile(int inX, int inY){
         this.x = inX;
         this.y = inY;
-        this.locationType = 'A'; //empty space
+        this.locationType = '-'; //empty space
         this.turnUpdated = rc.getRoundNum();
     }
 
     public int getX(){return this.x;}
     public int getY(){return this.y;}
+    public boolean getSoup(){return this.hasSoup;}
     public int getSoupAmt(){return this.soupAmt;}
     public int getElevation(){return this.elevation;}
     public int getPollution(){return this.pollutionAmt;}

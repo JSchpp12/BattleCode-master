@@ -107,7 +107,7 @@ public class LocalMap {
      * @param xLoc x coordinate of target location
      * @param yLoc y coordinate of target location
      */
-    public void clearLocation(int xLoc, int yLoc){this.map[xLoc][yLoc].setLocationType('A');}
+    public void clearLocation(int xLoc, int yLoc){this.map[xLoc][yLoc].setLocationType('-');}
 
     /**
      * update location data at a specific coordinate
@@ -160,7 +160,14 @@ public class LocalMap {
     }
     */
 
-    public char getLocationData(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getLocationType();}
+    public char getLocationData(MapLocation inLocation){
+        if (this.map[inLocation.x][inLocation.y] != null){
+            return this.map[inLocation.x][inLocation.y].getLocationType();
+        }else{
+            return '-';
+        }
+
+    }
     public int getLocationElevation(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getElevation();}
     public int getlocationAmtSoup(MapLocation inLocation){return this.map[inLocation.x][inLocation.y].getSoupAmt();}
     public int getUpdateTime(MapLocation inLocation) {return this.map[inLocation.x][inLocation.y].getUpdateTime(); }
@@ -172,7 +179,7 @@ public class LocalMap {
         for(int i = 0; i < map.length; i++) {
             for(int j = 0; j < map[i].length; j++) {
                 if(map[i][j] == null) continue;
-                if('C' == map[i][j].getLocationType() && location.distanceSquaredTo(toMapLocation(map[i][j])) < closestDistance) {
+                if(map[i][j].getSoup() && location.distanceSquaredTo(toMapLocation(map[i][j])) < closestDistance) {
                     System.out.println("Soup found at " + i + ", " + j);
                     closestSoup = map[i][j];
                     closestDistance = location.distanceSquaredTo(toMapLocation(map[i][j]));
