@@ -33,6 +33,7 @@ public class Tile {
     public int getX(){return this.x;}
     public int getY(){return this.y;}
     public boolean getSoup(){return this.hasSoup;}
+    public boolean hasEnemy(){return this.isEnemy;}
     public int getSoupAmt(){return this.soupAmt;}
     public int getElevation(){return this.elevation;}
     public int getPollution(){return this.pollutionAmt;}
@@ -40,6 +41,7 @@ public class Tile {
     public int getUpdateTime(){return this.turnUpdated;}
 
     public void setSoup(boolean inHasSoup){this.hasSoup = inHasSoup; this.turnUpdated = rc.getRoundNum(); }
+    public void setEnemy(boolean inHasEnemy){this.hasSoup = inHasEnemy; this.turnUpdated = rc.getRoundNum(); }
     public void setSoupAmt(int inSoupCount){this.soupAmt = inSoupCount; this.turnUpdated = rc.getRoundNum();  }
     public void setElevation(int newElevation){this.elevation = newElevation; this.turnUpdated = rc.getRoundNum(); }
     public void setPollution(int inPollution){this.pollutionAmt = inPollution; this.turnUpdated = rc.getRoundNum(); }

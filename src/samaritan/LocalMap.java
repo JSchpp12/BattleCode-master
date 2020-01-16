@@ -76,6 +76,8 @@ public class LocalMap {
         x = location.x;
         y = location.y;
         if (this.map[x][y] != null) {
+            if(!this.map[x][y].getSoup())
+                soups.add(this.map[location.x][location.y]);
             this.map[x][y].setSoup(true); //set soup
             this.map[x][y].setSoupAmt(soupAmt); //set soup amount
         }else{
@@ -83,9 +85,8 @@ public class LocalMap {
             this.map[location.x][location.y] = new Tile(location.x, location.y); //create new tile
             this.map[location.x][location.y].setSoup(true); //make tile contain soup
             this.map[location.x][location.y].setSoupAmt(soupAmt); //set soup amount
+            soups.add(this.map[location.x][location.y]);
         }
-
-        soups.add(this.map[location.x][location.y]);
     }
 
     /**
@@ -144,6 +145,30 @@ public class LocalMap {
             //tile object does not exist, create a new one
             addTile(x, y);
             this.map[x][y].setElevation(inElevation);
+        }
+    }
+
+    public void recordEnemy(RobotInfo r) {
+        int x, y;
+        MapLocation inLocation = r.getLocation();
+        x = inLocation.x;
+        y = inLocation.y;
+
+        if (this.map[x][y] != null){
+            //tile object exists, update/record enemy
+        }else {
+            //tile object does not exist, create a new one
+            addTile(x, y);
+        }
+        this.map[x][y].setEnemy(true);
+    }
+
+    public void clearEnemies() {
+        for(int i = 0; i < this.map.length; i++) {
+            for(int j = 0; j < this.map[i].length; j++) {
+                if(map[i][j] == null) continue;
+                map[i][j].setEnemy(false);
+            }
         }
     }
 
@@ -210,7 +235,9 @@ public class LocalMap {
 
     }*/
 
-    public Tile nextSoup(MapLocation location) {
+    public Tile nextSoup() {
+        if(soups.size() <= 0)
+            return null;
         return soups.get(0);
     }
 

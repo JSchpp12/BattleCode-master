@@ -22,7 +22,7 @@ public strictfp class RobotPlayer {
     static int turnCount;
     static LocalMap map;
     static Team myTeam;
-    static Team enemy;
+    static Team enemyTeam;
     static int totalSoupNearby;
     static MapLocation hqLocation;
     static int transactionPrice = 4;
@@ -66,10 +66,10 @@ public strictfp class RobotPlayer {
         initializeRobot();
 
         while (true) {
-            thisRound = rc.getRoundNum();
-            turnCount += 1;
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                thisRound = rc.getRoundNum();
+                turnCount += 1;
                 // Here, we've separated the controls into a different method for each RobotType.
                 // You can add the missing ones or rewrite this into your own control structure.
 
@@ -99,13 +99,13 @@ public strictfp class RobotPlayer {
         Tile closestSoup;
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!" + " TCount: " + rc.getRoundNum());
-            findSoup();
+            scanArea();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
             goal = BUILD_MINER;
         }
 
         if(goal == BUILD_MINER) {
-            closestSoup = map.nextSoup(rc.getLocation());
+            closestSoup = map.nextSoup();
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
                 if(forceBuild(RobotType.MINER, dir)) {
@@ -118,7 +118,7 @@ public strictfp class RobotPlayer {
         }
 
         else if(goal == BUILD_BUILDER) {
-            closestSoup = map.nextSoup(rc.getLocation());
+            closestSoup = map.nextSoup();
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup)).opposite();
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
                 forceBuild(RobotType.MINER, dir);
@@ -137,14 +137,14 @@ public strictfp class RobotPlayer {
             if(temp != -1)
                 goal = temp;
             else
-                goal = MINE;
-            findSoup();
+                goal = TRAVEL_TO_SOUP;
+            scanArea();
             findHQ();
             motherRefinery = hqLocation;
-            preferredDeposit = toMapLocation(map.nextSoup(rc.getLocation()));
+            preferredDeposit = toMapLocation(map.nextSoup());
 
         } else {
-            findSoup(); //Scan area before turn
+            scanArea(); //Scan area before turn
 
         } if(goal == STANDBY) {
 
@@ -165,7 +165,7 @@ public strictfp class RobotPlayer {
                 //Announce the depletion of soup
                 goal = TRAVEL_TO_SOUP;
                 updateSoupDeposit();
-                if(goal == MINE)
+                if(goal == TRAVEL_TO_SOUP)
                     forceMove(rc.getLocation().directionTo(preferredDeposit));
             }
             else if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit - 2) { //If robot is full
@@ -179,8 +179,8 @@ public strictfp class RobotPlayer {
             RobotInfo[] robots = rc.senseNearbyRobots(2, myTeam);
             for(int i = 0; i < robots.length; i++) {
                 if(robots[i].getType() == RobotType.REFINERY || robots[i].getType() == RobotType.HQ) {
-                    tryRefine(rc.getLocation().directionTo(robots[i].getLocation()));
-                    goal = TRAVEL_TO_SOUP;
+                    if(tryRefine(rc.getLocation().directionTo(robots[i].getLocation())))
+                        goal = TRAVEL_TO_SOUP;
                     break;
                 }
             }
@@ -319,7 +319,7 @@ public strictfp class RobotPlayer {
 
         map = new LocalMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
-        enemy = rc.getTeam().opponent();
+        enemyTeam = rc.getTeam().opponent();
         goal = STARTUP;
     }
 
@@ -342,8 +342,9 @@ public strictfp class RobotPlayer {
      */
     static void updateSoupDeposit() {
         //System.out.println("Changing preferredSDeposit");
-        preferredDeposit = toMapLocation(map.nextSoup(rc.getLocation()));
+        preferredDeposit = toMapLocation(map.nextSoup());
         if(preferredDeposit == null) {
+            System.out.println("Self-Destruc");
             goal = EXPLORE;
         }
     }
@@ -463,7 +464,9 @@ public strictfp class RobotPlayer {
         if (rc.isReady() && rc.canBuildRobot(type, dir)) {
             rc.buildRobot(type, dir);
             return true;
-        } else return false;
+        }
+        //System.out.println("Build Failed");
+        return false;
     }
 
     /**
@@ -474,10 +477,16 @@ public strictfp class RobotPlayer {
      * @throws GameActionException
      */
     static boolean tryMine(Direction dir) throws GameActionException {
-        if (rc.isReady() && rc.canMineSoup(dir)) {
+        if(!rc.isReady()) {
+            //System.out.println("Tried to mine " + dir.toString() + " While not ready");
+            return false;
+        }
+        if (rc.canMineSoup(dir)) {
             rc.mineSoup(dir);
             return true;
-        } else return false;
+        }
+        //System.out.println("Mine Failed");
+        return false;
     }
 
     /**
@@ -491,7 +500,9 @@ public strictfp class RobotPlayer {
         if (rc.isReady() && rc.canDepositSoup(dir)) {
             rc.depositSoup(dir, rc.getSoupCarrying());
             return true;
-        } else return false;
+        }
+        //System.out.println("Deposit Failed");
+        return false;
     }
 
 
@@ -499,7 +510,7 @@ public strictfp class RobotPlayer {
      * search every space within sensor radius for soup, will update local map with locations
      * Also finds elevation of every tile within radius
      */
-    static void findSoup() throws GameActionException {
+    static void scanArea() throws GameActionException {
         //System.out.println("Initializing Soup Scan...");
         int elevation;
         MapLocation scanLocation;
@@ -529,12 +540,7 @@ public strictfp class RobotPlayer {
             //check location for soup
             //System.out.println("Checking for soup at: " + scanLocation.x + ", " + scanLocation.y);
             try{
-                if(rc.senseSoup(scanLocation) > 0){
-                    //System.out.println("Found Soup");
-                    map.addSoup(scanLocation, rc.senseSoup(scanLocation));
-                }
-                //elevation = rc.senseElevation(scanLocation); //get elevation data
-                //map.recordElevation(scanLocation, elevation); //store elevation data
+                scanElevation(scanLocation);
 
             }catch(GameActionException exception){
                 //game exception
@@ -564,6 +570,30 @@ public strictfp class RobotPlayer {
 
             if(index == 8) index = 0;
             if(!nextLocationFound) scanComplete = true;
+        }
+
+        findSoup(); //These things do not need a tile-by-tile scan. They can just use the built in functions
+        //findUnits();
+    }
+
+    public static void scanElevation(MapLocation location) throws GameActionException {
+
+        //int elevation = rc.senseElevation(location); //get elevation data
+        //map.recordElevation(location, elevation); //store elevation data
+    }
+
+    public static void findSoup() throws GameActionException {
+        MapLocation[] soups = rc.senseNearbySoup();
+        for(int i = 0; i < soups.length; i++) {
+            map.addSoup(soups[i], rc.senseSoup(soups[i]));
+        }
+    }
+
+    public static void findUnits() {
+        map.clearEnemies();
+        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam);
+        for(int i = 0; i < robots.length; i++) {
+            map.recordEnemy(robots[i]);
         }
     }
 
