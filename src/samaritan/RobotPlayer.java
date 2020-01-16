@@ -104,6 +104,7 @@ public strictfp class RobotPlayer {
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!" + " TCount: " + rc.getRoundNum());
             scanArea();
+            publishHQLocation();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
             goal = BUILD_MINER;
         }
@@ -218,7 +219,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-        //tryBuild(RobotType.LANDSCAPER, randomDirection());
+        tryBuild(RobotType.LANDSCAPER, randomDirection());
     }
 
     static void runFulfillmentCenter() throws GameActionException {
@@ -236,7 +237,7 @@ public strictfp class RobotPlayer {
             if(rc.getLocation().distanceSquaredTo(hqLocation) < 4) {
                 forceMove(rc.getLocation().directionTo(hqLocation).opposite());
             } else {
-                rc.digDirt(randomDirection());
+                tryDig(randomDirection());
             }
             if(rc.getDirtCarrying() >= 25) {
                 goal = PLOP;
@@ -249,7 +250,7 @@ public strictfp class RobotPlayer {
             } else if(rc.getLocation().distanceSquaredTo(hqLocation) > 8) {
                 forceMove(rc.getLocation().directionTo(hqLocation));
             } else {
-                rc.depositDirt(rc.getLocation().directionTo(hqLocation));
+                tryDump(rc.getLocation().directionTo(hqLocation));
             }
             if(rc.getDirtCarrying() <= 0) {
                 goal = SCOOP;
@@ -296,6 +297,20 @@ public strictfp class RobotPlayer {
     }
 
     /**
+     * Temporary method
+     * Publishes location of hq at start of game
+     * @throws GameActionException
+     */
+    static void publishHQLocation() throws GameActionException {
+        int x = rc.getLocation().x;
+        int y = rc.getLocation().y;
+        int[] message = new int[7];
+        message[0] = x;
+        message[1] = y;
+        rc.submitTransaction(message, transactionPrice);
+    }
+
+    /**
      * Used for the miner to determine its first goal
      * @return
      * @throws GameActionException
@@ -330,15 +345,20 @@ public strictfp class RobotPlayer {
     /**
      * Saves the location of the HQ
      */
-    static void findHQ() {
-        RobotInfo[] robots = rc.senseNearbyRobots(20, myTeam);
+    static void findHQ() throws GameActionException {
+        /*RobotInfo[] robots = rc.senseNearbyRobots(20, myTeam);
         for(int i = 0; i < robots.length; i++) {
             if(robots[i].getType() == RobotType.HQ) {
                 hqLocation = robots[i].getLocation();
                 break;
             }
         }
-        return;
+        return;*/
+
+        Transaction[] t = rc.getBlock(1);
+        int[] message = t[0].getMessage();
+        hqLocation = new MapLocation(message[0], message[1]);
+        System.out.println("Location: " + message[0] + ", " + message[1]);
     }
 
     /**
@@ -351,6 +371,26 @@ public strictfp class RobotPlayer {
             System.out.println("Self-Destruc");
             goal = EXPLORE;
         }
+    }
+
+    /**
+     * Tries to dig in the specified direction
+     */
+    public static boolean tryDig(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canDigDirt(dir)) {
+            rc.digDirt(dir);
+            return true;
+        } else return false;
+    }
+
+    /**
+     * Tries to deposit dirt in the specified direction
+     */
+    public static boolean tryDump(Direction dir) throws GameActionException {
+        if (rc.isReady() && rc.canDepositDirt(dir)) {
+            rc.depositDirt(dir);
+            return true;
+        } else return false;
     }
 
 
@@ -632,7 +672,7 @@ public strictfp class RobotPlayer {
     //Returns the distance squared between
     public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
 
-    public void printLocalMap(){
+    public static void printLocalMap(){
         for (int i = 0; i< rc.getMapHeight(); i++){
             for (int j=0; j<rc.getMapWidth(); j++){
                 System.out.print(map.getLocationData(new MapLocation(j,i)));
