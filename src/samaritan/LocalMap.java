@@ -2,9 +2,12 @@ package samaritan;
 import battlecode.common.*;
 import javafx.scene.control.cell.TextFieldListCell;
 
+import java.util.ArrayList;
+
 public class LocalMap {
     Tile[][] map;
     int currentX, currentY;
+    ArrayList<Tile> soups = new ArrayList<>();
 
     /**
      * Create a new localMap object -- used when robot is created
@@ -75,14 +78,14 @@ public class LocalMap {
         if (this.map[x][y] != null) {
             this.map[x][y].setSoup(true); //set soup
             this.map[x][y].setSoupAmt(soupAmt); //set soup amount
-            System.out.println("Modifying Soup Tile");
         }else{
             addTile(location.x, location.y);
             this.map[location.x][location.y] = new Tile(location.x, location.y); //create new tile
             this.map[location.x][location.y].setSoup(true); //make tile contain soup
             this.map[location.x][location.y].setSoupAmt(soupAmt); //set soup amount
-            System.out.println("Creating new soup tile");
         }
+
+        soups.add(this.map[location.x][location.y]);
     }
 
     /**
@@ -92,6 +95,14 @@ public class LocalMap {
     public void removeSoup(MapLocation location){
         this.map[location.x][location.y].setSoup(false);
         this.map[location.x][location.y].setSoupAmt(0);
+
+        for(int i = 0; i < soups.size(); i++) {
+            if(soups.get(i).getX() == location.x && soups.get(i).getY() == location.y) {
+                soups.remove(i);
+                return;
+            }
+        }
+        System.out.println("ERR - removeSoup: no soups in ArrayList");
     }
 
     /**
@@ -181,7 +192,7 @@ public class LocalMap {
         }
     }
 
-    public Tile closestSoup(MapLocation location) {
+    /*public Tile closestSoup(MapLocation location) {
         //System.out.println("Running Closest Soup");
         int closestDistance = 100000;
         Tile closestSoup = null;
@@ -189,7 +200,7 @@ public class LocalMap {
             for(int j = 0; j < map[i].length; j++) {
                 if(map[i][j] == null) continue;
                 if(map[i][j].getSoup() && location.distanceSquaredTo(toMapLocation(map[i][j])) < closestDistance) {
-                    System.out.println("Soup found at " + i + ", " + j);
+                    //System.out.println("Soup found at " + i + ", " + j);
                     closestSoup = map[i][j];
                     closestDistance = location.distanceSquaredTo(toMapLocation(map[i][j]));
                 }
@@ -197,6 +208,10 @@ public class LocalMap {
         }
         return closestSoup;
 
+    }*/
+
+    public Tile nextSoup(MapLocation location) {
+        return soups.get(0);
     }
 
     //turns a tile into a MapLocation for easy processing

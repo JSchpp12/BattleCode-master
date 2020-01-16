@@ -25,6 +25,7 @@ public strictfp class RobotPlayer {
     static Team enemy;
     static int totalSoupNearby;
     static MapLocation hqLocation;
+    static int transactionPrice = 4;
 
     static int goal;
 
@@ -41,13 +42,14 @@ public strictfp class RobotPlayer {
     static int SCOOP = 9;
     static int PLOP = 10;
     static int STANDBY = 11;
-    static int DSCHOOL = 12;
+    static int BUILD_BUILDER = 12;
 
     //Commands
     static char GATHER_SOUP = 'S';
+    static char MAKE_DSCHOOL = 'D';
 
     static int minersNeeded = 2;
-
+    static int thisRound;
 
     //Miner variables
     static MapLocation motherRefinery;
@@ -64,6 +66,7 @@ public strictfp class RobotPlayer {
         initializeRobot();
 
         while (true) {
+            thisRound = rc.getRoundNum();
             turnCount += 1;
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
@@ -81,7 +84,8 @@ public strictfp class RobotPlayer {
                     case DESIGN_SCHOOL:      runDesignSchool();      break;
                     case FULFILLMENT_CENTER: runFulfillmentCenter(); break;
                 }
-                // Clock.yield() makes the robot wait until the next turn, then it will perform this loop again
+                if(rc.getRoundNum() != thisRound) //Checks is more than 1 round was needed to run this turn
+                    System.out.println("Bytecode Limit Exceeded - Round Started: " + thisRound + ". Round Finished: " + rc.getRoundNum());
                 Clock.yield();
 
             } catch (Exception e) {
@@ -97,30 +101,30 @@ public strictfp class RobotPlayer {
             System.out.println("HQ Initiating Startup!" + " TCount: " + rc.getRoundNum());
             findSoup();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
-            System.out.println("Turns: " + rc.getRoundNum());
-            closestSoup = map.closestSoup(rc.getLocation());
-
-            System.out.println("Closest Soup: " + closestSoup.getX() + ", " + closestSoup.getY() + " TCount: " + rc.getRoundNum());
-            Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
-            //System.out.println("About to build miner"  + " TCount: " + rc.getRoundNum());
-            forceBuild(RobotType.MINER, dir);
-            commandMiner(GATHER_SOUP);
-            minersNeeded--;
             goal = BUILD_MINER;
         }
 
-        else if(goal == BUILD_MINER) {
-            closestSoup = map.closestSoup(rc.getLocation());
+        if(goal == BUILD_MINER) {
+            closestSoup = map.nextSoup(rc.getLocation());
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
-            forceBuild(RobotType.MINER, dir);
-            commandMiner(GATHER_SOUP);
-            minersNeeded--;
+            if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
+                if(forceBuild(RobotType.MINER, dir)) {
+                    commandMiner(GATHER_SOUP);
+                    minersNeeded--;
+                }
+            }
             if(minersNeeded <= 0)
-                goal = DSCHOOL;
+                goal = BUILD_BUILDER;
         }
 
-        else if(goal == DSCHOOL) {
-
+        else if(goal == BUILD_BUILDER) {
+            closestSoup = map.nextSoup(rc.getLocation());
+            Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup)).opposite();
+            if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
+                forceBuild(RobotType.MINER, dir);
+                commandMiner(MAKE_DSCHOOL);
+                goal = NONE;
+            }
         }
     }
 
@@ -134,39 +138,38 @@ public strictfp class RobotPlayer {
                 goal = temp;
             else
                 goal = MINE;
+            findSoup();
             findHQ();
             motherRefinery = hqLocation;
-            findSoup();
-            preferredDeposit = toMapLocation(map.closestSoup(rc.getLocation()));
+            preferredDeposit = toMapLocation(map.nextSoup(rc.getLocation()));
+
+        } else {
+            findSoup(); //Scan area before turn
 
         } if(goal == STANDBY) {
 
 
         } if(goal == TRAVEL_TO_SOUP) {
-            //System.out.println("My goal is to travel to soup");
             if(rc.getLocation().equals(preferredDeposit)) {
-                //System.out.println("Changing goal to MINE");
                 goal = MINE;
             } else if(rc.getLocation().distanceSquaredTo(preferredDeposit) <= 2 && rc.isLocationOccupied(preferredDeposit)) {
                 goal = MINE;
-            }
-            else {
+            } else {
                 Direction direction = rc.getLocation().directionTo(preferredDeposit);
-                tryMove(direction);
+                forceMove(direction);
             }
 
         } if(goal == MINE) {
-            if(rc.senseSoup(preferredDeposit) <= 0) {
-                map.;
+            if(rc.senseSoup(preferredDeposit) <= 0) { //If soup deposit ran out
+                map.removeSoup(preferredDeposit);
                 //Announce the depletion of soup
                 goal = TRAVEL_TO_SOUP;
                 updateSoupDeposit();
-                tryMove(rc.getLocation().directionTo(preferredDeposit));
-                //System.out.println("Changing goal to DEPOSIT");
+                if(goal == MINE)
+                    forceMove(rc.getLocation().directionTo(preferredDeposit));
             }
-            else if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit - .5*(double)GameConstants.SOUP_MINING_RATE) {
+            else if(rc.getSoupCarrying() >= RobotType.MINER.soupLimit - 2) { //If robot is full
                 goal = DEPOSIT;
-                //System.out.println("Changing goal to DEPOSIT");
             }
             else {
                 tryMine(rc.getLocation().directionTo(preferredDeposit));
@@ -178,16 +181,15 @@ public strictfp class RobotPlayer {
                 if(robots[i].getType() == RobotType.REFINERY || robots[i].getType() == RobotType.HQ) {
                     tryRefine(rc.getLocation().directionTo(robots[i].getLocation()));
                     goal = TRAVEL_TO_SOUP;
-                    //System.out.println("Changing goal to TRAVEL_TO_SOUP");
                     break;
                 }
             }
             if(goal == DEPOSIT) {
-                tryMove(rc.getLocation().directionTo(motherRefinery));
+                forceMove(rc.getLocation().directionTo(motherRefinery));
             }
 
         } if(goal == EXPLORE) {
-
+            rc.disintegrate();
 
         } if(goal == BUILD_VAPORATOR) {
             forceBuild(RobotType.VAPORATOR, randomDirection());
@@ -195,11 +197,10 @@ public strictfp class RobotPlayer {
 
         } if(goal == BUILD_DESIGN_SCHOOL) {
             if(turnCount >= 12) {
-                System.out.println("Attempting to BUild design school");
                 if(tryBuild(RobotType.DESIGN_SCHOOL, rc.getLocation().directionTo(hqLocation).opposite()))
                     goal = EXPLORE;
             } else {
-                tryMove(rc.getLocation().directionTo(hqLocation).opposite());
+                forceMove(rc.getLocation().directionTo(hqLocation).opposite());
             }
         }
     }
@@ -213,7 +214,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-        tryBuild(RobotType.LANDSCAPER, randomDirection());
+        //tryBuild(RobotType.LANDSCAPER, randomDirection());
     }
 
     static void runFulfillmentCenter() throws GameActionException {
@@ -229,7 +230,7 @@ public strictfp class RobotPlayer {
         } if(goal == SCOOP) {
             System.out.println("SCOOP");
             if(rc.getLocation().distanceSquaredTo(hqLocation) < 4) {
-                tryMove(rc.getLocation().directionTo(hqLocation).opposite());
+                forceMove(rc.getLocation().directionTo(hqLocation).opposite());
             } else {
                 rc.digDirt(randomDirection());
             }
@@ -240,9 +241,9 @@ public strictfp class RobotPlayer {
 
             System.out.println("PLOP");
             if(rc.getLocation().distanceSquaredTo(hqLocation) <= 2) {
-                tryMove(rc.getLocation().directionTo(hqLocation).opposite());
+                forceMove(rc.getLocation().directionTo(hqLocation).opposite());
             } else if(rc.getLocation().distanceSquaredTo(hqLocation) > 8) {
-                tryMove(rc.getLocation().directionTo(hqLocation));
+                forceMove(rc.getLocation().directionTo(hqLocation));
             } else {
                 rc.depositDirt(rc.getLocation().directionTo(hqLocation));
             }
@@ -280,25 +281,36 @@ public strictfp class RobotPlayer {
      * @param command
      */
     static void commandMiner(char command) throws GameActionException {
+        if(rc.getTeamSoup() < transactionPrice) {
+            System.out.println("ERR - commandMiner: called with not enough soup");
+            return;
+        }
         int[] message = new int[7];
         message[0] = command;
-        rc.submitTransaction(message, 4);
-        System.out.println("Submitting message on turn " + rc.getRoundNum());
+        rc.submitTransaction(message, transactionPrice);
+        //System.out.println("Submitting message on turn " + rc.getRoundNum());
     }
 
+    /**
+     * Used for the miner to determine its first goal
+     * @return
+     * @throws GameActionException
+     */
     static int findPurpose() throws GameActionException {
-        System.out.println("Getting message on turn " + rc.getRoundNum());
-        debugBlockchain(rc.getRoundNum() - 1);
+        //System.out.println("Getting message on turn " + rc.getRoundNum());
+        //debugBlockchain(rc.getRoundNum() - 1);
         Transaction[] t = rc.getBlock(birthday);
         int[] message = t[0].getMessage();
         System.out.println("Message: " + (char)message[0]);
         if(message[0] == GATHER_SOUP)
             return TRAVEL_TO_SOUP;
+        if(message[0] == MAKE_DSCHOOL)
+            return BUILD_DESIGN_SCHOOL;
         return -1;
     }
 
     static void initializeRobot() throws GameActionException {
-        System.out.println("I'm a " + rc.getType() + ", my ID is " + rc.getID() + " and I just got created!"  + " TCount: " + rc.getRoundNum());
+        //System.out.println("I'm a " + rc.getType() + ", my ID is " + rc.getID() + " and I just got created!"  + " TCount: " + rc.getRoundNum());
         char internRobotId;
         internRobotId = convertRobotTypeToChar(rc.getType());
 
@@ -329,8 +341,8 @@ public strictfp class RobotPlayer {
      * Finds a new closest deposit one its preferredDeposit runs out
      */
     static void updateSoupDeposit() {
-        System.out.println("Changing preferredSDeposit");
-        preferredDeposit = toMapLocation(map.closestSoup(rc.getLocation()));
+        //System.out.println("Changing preferredSDeposit");
+        preferredDeposit = toMapLocation(map.nextSoup(rc.getLocation()));
         if(preferredDeposit == null) {
             goal = EXPLORE;
         }
@@ -353,20 +365,48 @@ public strictfp class RobotPlayer {
         return spawnedByMiner[(int) (Math.random() * spawnedByMiner.length)];
     }
 
-    static boolean tryMove() throws GameActionException {
-        for (Direction dir : directions)
-            if (tryMove(dir))
+
+    /**
+     * Makes the robot move. If it can't move in the preferred direction, it will move in the next closest direction
+     * @param dir
+     * @return if the forceMove was successful
+     */
+    static boolean forceMove(Direction dir) throws GameActionException {
+        if(!rc.isReady()) {
+            //if(turnCount > 10)
+                //System.out.println("ERR - forceMove: failed (1) Direction: " + dir.toString());
+            return false;
+        }
+
+        MapLocation location = rc.getLocation().add(dir);
+        if(rc.canMove(dir) && !rc.senseFlooding(location)) {
+            rc.move(dir);
+            return true;
+        }
+        Direction direction;
+        for(int i = 0; i < 4; i++) {
+            direction = dir;
+            for(int j = 0; j <= i; j++) {
+                direction = direction.rotateLeft();
+            }
+            location = rc.getLocation().add(direction);
+            if(rc.canMove(direction) && !rc.senseFlooding(location)) {
+                rc.move(direction);
                 return true;
+            }
+
+            direction = dir;
+            for(int j = 0; j <= i; j++) {
+                direction = direction.rotateRight();
+            }
+            location = rc.getLocation().add(direction);
+            if(rc.canMove(direction) && !rc.senseFlooding(location)) {
+                rc.move(direction);
+                return true;
+            }
+        }
+        System.out.println("ERR - forceMove: failed");
         return false;
-        // MapLocation loc = rc.getLocation();
-        // if (loc.x < 10 && loc.x < loc.y)
-        //     return tryMove(Direction.EAST);
-        // else if (loc.x < 10)
-        //     return tryMove(Direction.SOUTH);
-        // else if (loc.x > loc.y)
-        //     return tryMove(Direction.WEST);
-        // else
-        //     return tryMove(Direction.NORTH);
     }
 
     /**
@@ -379,7 +419,6 @@ public strictfp class RobotPlayer {
         // System.out.println("I am trying to move " + dir + "; " + rc.isReady() + " " + rc.getCooldownTurns() + " " + rc.canMove(dir));
         if (rc.isReady() && rc.canMove(dir)) {
             rc.move(dir);
-            findSoup();
             return true;
         } else return false;
     }
@@ -387,13 +426,13 @@ public strictfp class RobotPlayer {
     /**
      * Iterates through every direction closest to preferred direction to ensure a successful build
      */
-    static void forceBuild(RobotType type, Direction dir) throws GameActionException {
-        if(!rc.isReady()) return;
+    static boolean forceBuild(RobotType type, Direction dir) throws GameActionException {
+        if(!rc.isReady()) return false;
 
         MapLocation location = rc.getLocation().add(dir);
         if(rc.canBuildRobot(type, dir) && !rc.senseFlooding(location)) {
             rc.buildRobot(type, dir);
-            return;
+            return true;
         }
         Direction direction;
         for(int i = 0; i < 4; i++) {
@@ -404,7 +443,7 @@ public strictfp class RobotPlayer {
             location = rc.getLocation().add(direction);
             if(rc.canBuildRobot(type, direction) && !rc.senseFlooding(location)) {
                 rc.buildRobot(type, direction);
-                return;
+                return true;
             }
 
             direction = dir;
@@ -414,9 +453,10 @@ public strictfp class RobotPlayer {
             location = rc.getLocation().add(direction);
             if(rc.canBuildRobot(type, direction) && !rc.senseFlooding(location)) {
                 rc.buildRobot(type, direction);
-                return;
+                return true;
             }
         }
+        return false;
     }
 
     static boolean tryBuild(RobotType type, Direction dir) throws GameActionException {
@@ -452,19 +492,6 @@ public strictfp class RobotPlayer {
             rc.depositSoup(dir, rc.getSoupCarrying());
             return true;
         } else return false;
-    }
-
-
-    static void tryBlockchain() throws GameActionException {
-        if (turnCount < 3) {
-            int[] message = new int[7];
-            for (int i = 0; i < 7; i++) {
-                message[i] = 123;
-            }
-            if (rc.canSubmitTransaction(message, 10))
-                rc.submitTransaction(message, 10);
-        }
-        // System.out.println(rc.getRoundMessages(turnCount-1));
     }
 
 
@@ -506,8 +533,8 @@ public strictfp class RobotPlayer {
                     //System.out.println("Found Soup");
                     map.addSoup(scanLocation, rc.senseSoup(scanLocation));
                 }
-                elevation = rc.senseElevation(scanLocation); //get elevation data
-                map.recordElevation(scanLocation, elevation); //store elevation data
+                //elevation = rc.senseElevation(scanLocation); //get elevation data
+                //map.recordElevation(scanLocation, elevation); //store elevation data
 
             }catch(GameActionException exception){
                 //game exception
