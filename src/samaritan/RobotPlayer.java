@@ -68,6 +68,10 @@ public strictfp class RobotPlayer {
         while (true) {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
+                while(turnCount > 10 && rc.getCooldownTurns() >= 1) { //If the robot wont be able to move anyway, just skip the turn
+                    //System.out.println("Pollution too high, skipping turn: " + rc.getRoundNum());
+                    Clock.yield();
+                }
                 thisRound = rc.getRoundNum();
                 turnCount += 1;
                 // Here, we've separated the controls into a different method for each RobotType.
