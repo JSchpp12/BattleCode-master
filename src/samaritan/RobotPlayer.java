@@ -39,10 +39,12 @@ public strictfp class RobotPlayer {
     static int EXPLORE = 6;
     static int BUILD_VAPORATOR = 7;
     static int BUILD_DESIGN_SCHOOL = 8;
-    static int SCOOP = 9;
+    static int BUILD_DEFENSIVE_WALL = 9;
     static int PLOP = 10;
     static int STANDBY = 11;
     static int BUILD_BUILDER = 12;
+    static int FIND_PERCH = 13;
+    static int GO_TOWARDS_HQ = 14;
 
     //Commands
     static char GATHER_SOUP = 'S';
@@ -54,6 +56,7 @@ public strictfp class RobotPlayer {
     //Miner variables
     static MapLocation motherRefinery;
     static MapLocation preferredDeposit;
+    static MapLocation perch;
 
     /**
      * run() is the method that is called when a robot is instantiated in the Battlecode world.
@@ -230,30 +233,26 @@ public strictfp class RobotPlayer {
     static void runLandscaper() throws GameActionException {
         if(goal == STARTUP) {
             findHQ();
-            goal = SCOOP;
+            goal = GO_TOWARDS_HQ;
 
-        } if(goal == SCOOP) {
-            System.out.println("SCOOP");
-            if(rc.getLocation().distanceSquaredTo(hqLocation) < 4) {
-                forceMove(rc.getLocation().directionTo(hqLocation).opposite());
-            } else {
-                tryDig(randomDirection());
+        } if(goal == GO_TOWARDS_HQ) {
+            forceMove(rc.getLocation().directionTo(hqLocation));
+            if (rc.getLocation().distanceSquaredTo(hqLocation) <= 2) {
+                goal = FIND_PERCH;
+                perch = getPerch();
             }
-            if(rc.getDirtCarrying() >= 25) {
-                goal = PLOP;
-            }
-        } else if(goal == PLOP) {
 
-            System.out.println("PLOP");
-            if(rc.getLocation().distanceSquaredTo(hqLocation) <= 2) {
-                forceMove(rc.getLocation().directionTo(hqLocation).opposite());
-            } else if(rc.getLocation().distanceSquaredTo(hqLocation) > 8) {
-                forceMove(rc.getLocation().directionTo(hqLocation));
-            } else {
-                tryDump(rc.getLocation().directionTo(hqLocation));
+        } if(goal == FIND_PERCH) {
+            forceMove(rc.getLocation().directionTo(perch));
+            if (rc.getLocation().equals(perch)) {
+                goal = BUILD_DEFENSIVE_WALL;
             }
-            if(rc.getDirtCarrying() <= 0) {
-                goal = SCOOP;
+
+        } else if(goal == BUILD_DEFENSIVE_WALL) {
+            if (rc.getDirtCarrying() >= 25) {
+                tryDump(CENTER);
+            } else {
+                tryDig(hqLocation.directionTo(rc.getLocation()));
             }
 
         }
@@ -371,6 +370,34 @@ public strictfp class RobotPlayer {
             System.out.println("Self-Destruc");
             goal = EXPLORE;
         }
+    }
+
+    public static MapLocation getPerch() throws GameActionException {
+        Direction dir = rc.getLocation().directionTo(hqLocation);
+
+        MapLocation location = hqLocation.add(dir);
+        if(!rc.isLocationOccupied(location))
+            return location;
+        Direction direction;
+        for(int i = 0; i < 4; i++) {
+            direction = dir;
+            for(int j = 0; j <= i; j++) {
+                direction = direction.rotateLeft();
+            }
+            location = hqLocation.add(direction);
+            if(!rc.isLocationOccupied(location))
+                return location;
+
+            direction = dir;
+            for(int j = 0; j <= i; j++) {
+                direction = direction.rotateRight();
+            }
+            location = rc.getLocation().add(direction);
+            if(!rc.isLocationOccupied(location))
+                return location;
+        }
+        System.out.println("ERR - getPerch: failed");
+        return null;
     }
 
     /**
