@@ -25,7 +25,6 @@ public strictfp class RobotPlayer {
     static Team enemyTeam;
     static int totalSoupNearby;
     static MapLocation hqLocation;
-    static int transactionPrice = 4;
 
     static int goal;
 
@@ -50,7 +49,12 @@ public strictfp class RobotPlayer {
     static char GATHER_SOUP = 'S';
     static char MAKE_DSCHOOL = 'D';
 
-    static int minersNeeded = 2;
+    static int minersNeeded = 4;
+    static int landscapersNeeded = 8;
+    static int transactionPrice = 4;
+    static int buildingSpace = 3;
+
+
     static int thisRound;
 
     //Miner variables
@@ -160,7 +164,7 @@ public strictfp class RobotPlayer {
         } if(goal == TRAVEL_TO_SOUP) {
             if(rc.getLocation().equals(preferredDeposit)) {
                 goal = MINE;
-            } else if(rc.getLocation().distanceSquaredTo(preferredDeposit) <= 2 && rc.isLocationOccupied(preferredDeposit)) {
+            } else if(!isPassible(preferredDeposit) && rc.getLocation().distanceSquaredTo(preferredDeposit) <= 2) {
                 goal = MINE;
             } else {
                 Direction direction = rc.getLocation().directionTo(preferredDeposit);
@@ -204,12 +208,7 @@ public strictfp class RobotPlayer {
             goal = EXPLORE;
 
         } if(goal == BUILD_DESIGN_SCHOOL) {
-            if(turnCount >= 12) {
-                if(tryBuild(RobotType.DESIGN_SCHOOL, rc.getLocation().directionTo(hqLocation).opposite()))
-                    goal = EXPLORE;
-            } else {
-                forceMove(rc.getLocation().directionTo(hqLocation).opposite());
-            }
+
         }
     }
 
@@ -222,7 +221,10 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-        tryBuild(RobotType.LANDSCAPER, randomDirection());
+        if(rc.getRoundNum() > 200 && landscapersNeeded > 0) {
+            if(tryBuild(RobotType.LANDSCAPER, randomDirection()))
+                landscapersNeeded--;
+        }
     }
 
     static void runFulfillmentCenter() throws GameActionException {
@@ -233,14 +235,8 @@ public strictfp class RobotPlayer {
     static void runLandscaper() throws GameActionException {
         if(goal == STARTUP) {
             findHQ();
-            goal = GO_TOWARDS_HQ;
-
-        } if(goal == GO_TOWARDS_HQ) {
-            forceMove(rc.getLocation().directionTo(hqLocation));
-            if (rc.getLocation().distanceSquaredTo(hqLocation) <= 2) {
-                goal = FIND_PERCH;
-                perch = getPerch();
-            }
+            perch = getPerch();
+            goal = FIND_PERCH;
 
         } if(goal == FIND_PERCH) {
             forceMove(rc.getLocation().directionTo(perch));
@@ -373,30 +369,13 @@ public strictfp class RobotPlayer {
     }
 
     public static MapLocation getPerch() throws GameActionException {
-        Direction dir = rc.getLocation().directionTo(hqLocation);
-
-        MapLocation location = hqLocation.add(dir);
-        if(!rc.isLocationOccupied(location))
-            return location;
-        Direction direction;
-        for(int i = 0; i < 4; i++) {
-            direction = dir;
-            for(int j = 0; j <= i; j++) {
-                direction = direction.rotateLeft();
+        RobotInfo[] robots = rc.senseNearbyRobots(2, myTeam);
+        for(int i = 0; i < robots.length; i++) {
+            if(robots[i].getType() == RobotType.DESIGN_SCHOOL) {
+                Direction dir = robots[i].getLocation().directionTo(rc.getLocation());
+                return hqLocation.add(dir);
             }
-            location = hqLocation.add(direction);
-            if(!rc.isLocationOccupied(location))
-                return location;
-
-            direction = dir;
-            for(int j = 0; j <= i; j++) {
-                direction = direction.rotateRight();
-            }
-            location = rc.getLocation().add(direction);
-            if(!rc.isLocationOccupied(location))
-                return location;
         }
-        System.out.println("ERR - getPerch: failed");
         return null;
     }
 
@@ -576,6 +555,21 @@ public strictfp class RobotPlayer {
         return false;
     }
 
+    /**
+     * returns preferred spot to build design school
+     */
+    public static MapLocation designSchoolSpot() {
+        MapLocation l = hqLocation;
+        for(int i = 0; i < buildingSpace; i++) {
+            l.add(rc.getLocation().directionTo(hqLocation).opposite());
+        }
+        return l;
+    }
+
+    public static MapLocation fulfillmentCenterSpot() {
+        return null;
+    }
+
 
     /**
      * search every space within sensor radius for soup, will update local map with locations
@@ -716,5 +710,14 @@ public strictfp class RobotPlayer {
             }
         }
         System.out.println("");
+    }
+
+    public static boolean isPassible(MapLocation l) throws GameActionException {
+        int h = rc.senseElevation(rc.getLocation());
+        int g = rc.senseElevation(l);
+        int k = Math.abs(h - g);
+        if(rc.isLocationOccupied(l) || k > 3)
+            return false;
+        return true;
     }
 }
