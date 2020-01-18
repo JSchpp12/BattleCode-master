@@ -248,7 +248,14 @@ public class LocalMap {
         return new MapLocation(t.getX(), t.getY());
     }
 
-    //Returns the distance squared between
+    /**
+     * Returns the distance squared between the two passed points
+     * @param t1 point 1
+     * @param t2 point 2
+     * @return distance value
+     */
     public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
+
+    public Tile getTile(MapLocation tileLocation){return this.map[tileLocation.x][tileLocation.y];}
 
 }

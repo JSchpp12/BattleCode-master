@@ -17,7 +17,7 @@ public strictfp class RobotPlayer {
     };
     static RobotType[] spawnedByMiner = {RobotType.REFINERY, RobotType.VAPORATOR, RobotType.DESIGN_SCHOOL,
             RobotType.FULFILLMENT_CENTER, RobotType.NET_GUN};
-
+    static MessageController controller;
     static int birthday;
     static int turnCount;
     static LocalMap map;
@@ -719,5 +719,40 @@ public strictfp class RobotPlayer {
         if(rc.isLocationOccupied(l) || k > 3)
             return false;
         return true;
+    }
+
+    /**
+     * A quick example to show how the new communication system can be called
+     */
+    public static void CommunicationExample(){
+        int encodedMessage[];
+        MapLocation mapLocation;
+        com.company.DecodedMessage decodedMessage;
+        Tile[] decodedTiles = new Tile[6];
+        controller = new MessageController(); //call this at the beginning of the robot init stuff
+
+        //creates a map message
+        controller.createMapMessage(50, 35);
+        mapLocation = new MapLocation(64, 1);
+        controller.encodeLocation(map.getTile(mapLocation));
+        mapLocation = new MapLocation(64, 2);
+        controller.encodeLocation(map.getTile(mapLocation));
+        encodedMessage = controller.getEncodedMessage();
+
+        //decode message
+        if (controller.validateMessage(encodedMessage, 50)){
+            System.out.println("Message is valid, decoding...");
+            decodedMessage = controller.decodeMessage(encodedMessage, 50);
+            decodedMessage.getLastMessageTurn();
+            //get tile information
+            Tile tempTile;
+            for (int i = 0; i < decodedMessage.getNumTiles(); i++){
+                //move to map
+                tempTile = decodedMessage.getTile(i);
+                System.out.println("Tile location ( " + tempTile.getX() + " , " + tempTile.getY() + " )");
+                System.out.println("Location Data - " + tempTile.getLocationType());
+                System.out.println("Soup Amt - " + tempTile.getSoupAmt());
+            }
+        }
     }
 }
