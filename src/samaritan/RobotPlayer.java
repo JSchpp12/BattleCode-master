@@ -62,7 +62,7 @@ public strictfp class RobotPlayer {
     static int minersNeeded = 3;
     static int landscapersNeeded = 8;
     static int dronesNeeded = 0;
-    static int transactionPrice = 4;
+    static int transactionPrice = 1;
     static int buildingSpace = 3;
     static int explorersNeeded = 1;
 
@@ -406,10 +406,14 @@ public strictfp class RobotPlayer {
     static void publishHQLocation() throws GameActionException {
         int x = rc.getLocation().x;
         int y = rc.getLocation().y;
-        int[] message = new int[7];
-        message[0] = x;
-        message[1] = y;
-        rc.submitTransaction(message, transactionPrice);
+        int[] encodedMessage;
+
+        controller.createMapMessage(rc.getRoundNum(), 0);
+        Tile hq = new Tile(x, y);
+        hq.setLocationType('D');
+        controller.encodeLocation(hq);
+        encodedMessage = controller.getEncodedMessage();
+        rc.submitTransaction(encodedMessage, transactionPrice);
     }
 
     /**
@@ -441,6 +445,7 @@ public strictfp class RobotPlayer {
         turnCount = 0;
         birthday = rc.getRoundNum() - 1;
 
+        controller = new MessageController();
         map = new LocalMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
         enemyTeam = rc.getTeam().opponent();
@@ -461,19 +466,26 @@ public strictfp class RobotPlayer {
      * Saves the location of the HQ
      */
     static void findHQ() throws GameActionException {
-        /*RobotInfo[] robots = rc.senseNearbyRobots(20, myTeam);
-        for(int i = 0; i < robots.length; i++) {
-            if(robots[i].getType() == RobotType.HQ) {
-                hqLocation = robots[i].getLocation();
-                break;
-            }
-        }
-        return;*/
 
         Transaction[] t = rc.getBlock(1);
-        int[] message = t[0].getMessage();
-        hqLocation = new MapLocation(message[0], message[1]);
-        System.out.println("Location: " + message[0] + ", " + message[1]);
+        int[] encodedMessage = null;
+        DecodedMessage decodedMessage;
+
+        for(int i = 0; i < t.length; i++) {
+            encodedMessage = t[i].getMessage();
+
+            if (controller.validateMessage(encodedMessage, 1)){
+                //System.out.println("Message is valid, decoding...");
+                decodedMessage = controller.decodeMessage(encodedMessage, 1);
+                //get tile information
+                Tile tempTile;
+                hqLocation = toMapLocation(decodedMessage.getTile(0));
+                System.out.println("Location: " + hqLocation.x + ", " + hqLocation.y);
+                return;
+            }
+        }
+
+        System.out.println("Invalid message");
     }
 
     /**
