@@ -727,7 +727,7 @@ public strictfp class RobotPlayer {
     public static void CommunicationExample(){
         int encodedMessage[];
         MapLocation mapLocation;
-        com.company.DecodedMessage decodedMessage;
+        DecodedMessage decodedMessage;
         Tile[] decodedTiles = new Tile[6];
         controller = new MessageController(); //call this at the beginning of the robot init stuff
 

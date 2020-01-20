@@ -3,7 +3,7 @@ package samaritan;
 import samaritan.Tile;
 
 public class MessageController {
-    private com.company.EncodedMessage _encodedMessage;
+    private EncodedMessage _encodedMessage;
     private int _numIntsEncoded;
     private final int[] _intOrder = {2, 0, 1, 3, 4, 5, 6};
 
@@ -15,7 +15,7 @@ public class MessageController {
      */
     public void createMapMessage(int turnNumber, int previousMessageTurn){
         int teamId;
-        this._encodedMessage = new com.company.EncodedMessage();
+        this._encodedMessage = new EncodedMessage();
         teamId = calculateTeamId(turnNumber);
         System.out.println("Team Id Calculated as - " + teamId);
 
@@ -31,7 +31,7 @@ public class MessageController {
      */
     public boolean validateMessage(int[] message, int messageTurn){
         int decodedId;
-        this._encodedMessage = new com.company.EncodedMessage();
+        this._encodedMessage = new EncodedMessage();
 
         //get team id from message
         decodedId = this._encodedMessage.decodeTeamId(message);
@@ -60,7 +60,7 @@ public class MessageController {
     }
 
     public int[] createCommandMessage(int commandType, int turnNumber){
-        this._encodedMessage = new com.company.EncodedMessage();
+        this._encodedMessage = new EncodedMessage();
         int[] message = new int[3];
         message[2] = calculateTeamId(turnNumber);
         message[0] = commandType;
@@ -68,7 +68,7 @@ public class MessageController {
     }
 
     public int[] createCommandMessage(int x, int y, int commandType, int turnNumber){
-        this._encodedMessage = new com.company.EncodedMessage();
+        this._encodedMessage = new EncodedMessage();
         int[] message = new int[4];
         message[2] = calculateTeamId(turnNumber);
         message[0] = commandType;
@@ -83,8 +83,8 @@ public class MessageController {
      * @param messageTurn turn the passed message was posted to the blockChain
      * @return
      */
-    public com.company.DecodedMessage decodeMessage(int[] message, int messageTurn){
-        com.company.DecodedMessage decodedMessage = new com.company.DecodedMessage();
+    public DecodedMessage decodeMessage(int[] message, int messageTurn){
+        DecodedMessage decodedMessage = new DecodedMessage();
         int numTiles = 0;
         //this._encodedMessage = new EncodedMessage();
 

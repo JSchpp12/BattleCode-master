@@ -1,4 +1,4 @@
-package com.company;
+package samaritan;
 import samaritan.Tile;
 
 import java.util.*;
