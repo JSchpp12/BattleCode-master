@@ -1,6 +1,5 @@
 package samaritan;
 import battlecode.common.*;
-import javafx.scene.control.cell.TextFieldListCell;
 
 import java.util.ArrayList;
 
@@ -8,6 +7,9 @@ public class LocalMap {
     Tile[][] map;
     int currentX, currentY;
     ArrayList<Tile> soups = new ArrayList<>();
+    ArrayList<MapLocation> fogTiles = new ArrayList<>();
+
+    int fogSpacing = 9;
 
     /**
      * Create a new localMap object -- used when robot is created
@@ -250,5 +252,98 @@ public class LocalMap {
 
     //Returns the distance squared between
     public static int distanceBetween(Tile t1, Tile t2) { return toMapLocation(t1).distanceSquaredTo(toMapLocation(t2)); }
+
+    /**
+     * Fog is a list of Tiles that have not been explored yet. Exploring each of these locations and 'clearing the fog'
+     * should more or less reveal the entire map
+     * @param hqLocation
+     */
+    public void initFog(MapLocation hqLocation) {
+        int x = hqLocation.x - fogSpacing;
+        int y = hqLocation.y;
+
+        //Start left and right
+        while(x >= 0) {
+            fogTiles.add(new MapLocation(x, y));
+            x -= fogSpacing;
+        }
+        x = hqLocation.x + fogSpacing;
+        while(x <= this.map.length) {
+            fogTiles.add(new MapLocation(x, y));
+            x += fogSpacing;
+        }
+
+        y = hqLocation.y - fogSpacing;
+        while(y >= 0) {
+            x = hqLocation.x;
+            while(x >= 0) {
+                fogTiles.add(new MapLocation(x, y));
+                x -= fogSpacing;
+            }
+            x = hqLocation.x + fogSpacing;
+            while(x <= this.map.length) {
+                fogTiles.add(new MapLocation(x, y));
+                x += fogSpacing;
+            }
+            y -= fogSpacing;
+        }
+
+        y = hqLocation.y + fogSpacing;
+        while(y <= this.map[0].length) {
+            x = hqLocation.x;
+            while(x >= 0) {
+                fogTiles.add(new MapLocation(x, y));
+                x -= fogSpacing;
+            }
+            x = hqLocation.x + fogSpacing;
+            while(x <= this.map.length) {
+                fogTiles.add(new MapLocation(x, y));
+                x += fogSpacing;
+            }
+            y += fogSpacing;
+        }
+    }
+
+    public MapLocation getFirstFog(MapLocation thisLocation) {
+        int x = thisLocation.x;
+        int y = thisLocation.y;
+        int distance = 100000;
+        MapLocation closest = null;
+
+        for(int i = 0; i < fogTiles.size(); i++) {
+            if(thisLocation.distanceSquaredTo(fogTiles.get(i)) < distance) {
+                closest = fogTiles.get(i);
+                distance = thisLocation.distanceSquaredTo(fogTiles.get(i));
+            }
+        }
+        return closest;
+    }
+
+    /**
+     * Returns closest unexplored fog tile
+     */
+    public MapLocation getClosestFog(MapLocation myLocation) {
+        int x = myLocation.x;
+        int y = myLocation.y;
+
+        for(int i = 0; i < fogTiles.size(); i++) {
+            if(Math.abs(fogTiles.get(i).x - x) <= fogSpacing && Math.abs(fogTiles.get(i).y - y) <= fogSpacing) {
+                //System.out.println("ClosestFog: " + fogTiles.get(i).x + ", " + fogTiles.get(i).y);
+                return fogTiles.get(i);
+            }
+        }
+        System.out.println("No fog found");
+        return null;
+    }
+
+    public void disperseFog(MapLocation fogLocation) {
+        for(int i = 0; i < fogTiles.size(); i++) {
+            if(fogTiles.get(i).equals(fogLocation)) {
+                fogTiles.remove(i);
+                return;
+            }
+        }
+        System.out.println("ERR - No such for found.");
+    }
 
 }
