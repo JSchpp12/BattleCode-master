@@ -58,14 +58,14 @@ public strictfp class RobotPlayer {
     static char MAKE_FCENTER = 'F';
     static char CEXPLORE = 'E';
 
-    static int minersNeeded = 2;
+    static int minersNeeded = 3;
     static int landscapersNeeded = 8;
     static int dronesNeeded = 0;
     static int transactionPrice = 4;
     static int buildingSpace = 3;
     static int explorersNeeded = 1;
 
-    static int wallBuildingTurn = 300;
+    static int wallBuildingTurn = 400;
 
     static int thisRound;
 
@@ -276,7 +276,7 @@ public strictfp class RobotPlayer {
     }
 
     static void runDesignSchool() throws GameActionException {
-        if(goal == STANDBY) {
+        if(goal == STARTUP) {
             findHQ();
             buildDirection = rc.getLocation().directionTo(hqLocation);
             goal = BUILD_WALL_BUILDERS;
@@ -472,7 +472,7 @@ public strictfp class RobotPlayer {
         Transaction[] t = rc.getBlock(1);
         int[] message = t[0].getMessage();
         hqLocation = new MapLocation(message[0], message[1]);
-        //System.out.println("Location: " + message[0] + ", " + message[1]);
+        System.out.println("Location: " + message[0] + ", " + message[1]);
     }
 
     /**
