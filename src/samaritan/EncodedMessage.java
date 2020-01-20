@@ -38,7 +38,7 @@ public class EncodedMessage {
 
         addInt(teamValue, 16);
         addInt(previousMessageTurn, 16);
-        System.out.println("Header encoded message is - " + this._messageData[2].toString());
+        //System.out.println("Header encoded message is - " + this._messageData[2].toString());
     }
 
     /**
@@ -73,7 +73,7 @@ public class EncodedMessage {
 
         //read the turn from the bitset
         decodedLastTurn = getIntFromBit(2, 16, 32);
-        System.out.println("Decoded last message turn as - " + decodedLastTurn);
+        //System.out.println("Decoded last message turn as - " + decodedLastTurn);
 
         return decodedLastTurn;
     }
@@ -122,7 +122,7 @@ public class EncodedMessage {
     public void addChar(char inChar){
         int bitsUsed = 0;
         String binaryString = Integer.toBinaryString(inChar);
-        System.out.println("Adding char" + binaryString);
+        //System.out.println("Adding char" + binaryString);
         for (int i = binaryString.length() - 1; i >= 0; i--){
             if (binaryString.charAt(i) == '1'){
                 this._messageData[this._currentSet].set(this._nextBit, true);
@@ -184,7 +184,7 @@ public class EncodedMessage {
     public int getInt(int index){
         int value;
         if (this._messageData[index] != null){
-            System.out.println("Converting - " + this._messageData[index].toString());
+            //System.out.println("Converting - " + this._messageData[index].toString());
             value = 0;
             for (int i = 0; i < this._messageData[index].length(); i++){
                 value += this._messageData[index].get(i) ? (1 << i) : 0;

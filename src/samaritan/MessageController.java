@@ -17,7 +17,7 @@ public class MessageController {
         int teamId;
         this._encodedMessage = new EncodedMessage();
         teamId = calculateTeamId(turnNumber);
-        System.out.println("Team Id Calculated as - " + teamId);
+        //System.out.println("Team Id Calculated as - " + teamId);
 
         this._encodedMessage.createHeader(teamId, previousMessageTurn);
         this._numIntsEncoded = 1;
@@ -35,7 +35,7 @@ public class MessageController {
 
         //get team id from message
         decodedId = this._encodedMessage.decodeTeamId(message);
-        System.out.println("Decoded team id is - "  + decodedId );
+        //System.out.println("Decoded team id is - "  + decodedId );
         return verifyTeamId(decodedId, messageTurn);
     }
 

@@ -7,6 +7,7 @@ import static samaritan.RobotPlayer.rc;
 /**Location Types:
  * - - empty
  * B - water
+ * C - Soup
  * D - HQ
  * E - COW
  * F - MINER

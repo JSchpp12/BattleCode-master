@@ -109,6 +109,17 @@ public class LocalMap {
     }
 
     /**
+     * returns if the map has this location as having soup
+     * @param location
+     * @return
+     */
+    public boolean hasSoup(MapLocation location) {
+        if(this.map[location.x][location.y] == null)
+            return false;
+        return this.map[location.x][location.y].getSoup();
+    }
+
+    /**
      * clears location of its location data
      * @param xLoc x coordinate of target location
      * @param yLoc y coordinate of target location

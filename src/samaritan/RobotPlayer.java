@@ -4,6 +4,7 @@ import battlecode.common.*;
 import java.lang.reflect.MalformedParameterizedTypeException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Queue;
 
 import static battlecode.common.Direction.*;
 
@@ -52,16 +53,19 @@ public strictfp class RobotPlayer {
     static int BUILD_FULFILLMENT_CENTER = 15;
     static int BUILD_EXPLORERS = 16;
     static int BUILD_WALL_BUILDERS = 17;
+    static int QUEUE = 18;
+    static int TREK_TO_SOUP = 19;
 
     //Commands
     static char GATHER_SOUP = 'S';
     static char MAKE_DSCHOOL = 'D';
     static char MAKE_FCENTER = 'F';
     static char CEXPLORE = 'E';
+    static char SOUP_TREK = 'T';
 
     static int minersNeeded = 3;
     static int landscapersNeeded = 8;
-    static int dronesNeeded = 0;
+    static int dronesNeeded = 1;
     static int transactionPrice = 1;
     static int buildingSpace = 3;
     static int explorersNeeded = 1;
@@ -79,6 +83,11 @@ public strictfp class RobotPlayer {
     static MapLocation explorationDestination;
     static Direction buildDirection;
 
+    static MapLocation enemyHQ = null;
+    static ArrayList<MapLocation> possibleEnemyHQ = new ArrayList<>();
+    static ArrayList<Tile> HQueue = new ArrayList<>();
+    static int previousMessageTurn;
+    static ArrayList<Tile> publishQueue = new ArrayList<>();
     static ArrayList<MapLocation> stink = new ArrayList<>();
     static int stinkLength = 1;
 
@@ -144,7 +153,7 @@ public strictfp class RobotPlayer {
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
                 if(forceBuild(RobotType.MINER, dir)) {
-                    commandMiner(GATHER_SOUP);
+                    commandMiner(GATHER_SOUP, -1, -1);
                     minersNeeded--;
                 }
             }
@@ -157,7 +166,7 @@ public strictfp class RobotPlayer {
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup)).opposite();
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
                 if(forceBuild(RobotType.MINER, dir)) {
-                    commandMiner(MAKE_FCENTER);
+                    commandMiner(MAKE_FCENTER, -1, -1);
                     goal = BUILD_EXPLORERS;
                 }
             }
@@ -166,14 +175,33 @@ public strictfp class RobotPlayer {
             Direction dir = rc.getLocation().directionTo(findCenterOfMap());
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
                 if(forceBuild(RobotType.MINER, dir)) {
-                    commandMiner(CEXPLORE);
+                    commandMiner(CEXPLORE, -1, -1);
                     explorersNeeded--;
                 }
             }
             if(explorersNeeded <= 0) {
-                goal = NONE;
+                goal = QUEUE;
+            }
+
+        } else if(goal == QUEUE) {
+            //System.out.println("QUEUE");
+            if(HQueue.size() > 0) {
+                Tile tempTile = HQueue.remove(0);
+                char action = tempTile.getLocationType();
+                if(action == 'C') {
+                    MapLocation soup = toMapLocation(tempTile);
+                    Direction dir = rc.getLocation().directionTo(soup);
+                    if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
+                        if(forceBuild(RobotType.MINER, dir)) {
+                            commandMiner(SOUP_TREK, tempTile.getX(), tempTile.getY());
+                        }
+                    }
+                }
             }
         }
+
+        if(rc.getRoundNum() > 1)
+            readTiles();
     }
 
     static void runMiner() throws GameActionException {
@@ -298,7 +326,7 @@ public strictfp class RobotPlayer {
             Direction dir = rc.getLocation().directionTo(findCenterOfMap());
             if(rc.getTeamSoup() >= RobotType.DELIVERY_DRONE.cost + transactionPrice) {
                 if(forceBuild(RobotType.DELIVERY_DRONE, dir))
-                    commandMiner(CEXPLORE);
+                    commandMiner(CEXPLORE, -1, -1);
                 dronesNeeded--;
             }
         }
@@ -337,6 +365,8 @@ public strictfp class RobotPlayer {
             int temp = findPurpose(); //Get its command form the HQ
             if (temp != -1)
                 goal = temp;
+            else
+                goal = EXPLORE;
             scanArea(false, true, true);
             findHQ();
             findMotherBuilding();
@@ -354,10 +384,59 @@ public strictfp class RobotPlayer {
                 forceMove(rc.getLocation().directionTo(explorationDestination));
             }
         }
+        publishTiles();
     }
 
     static void runNetGun() throws GameActionException {
 
+    }
+
+    public static void readTiles() throws GameActionException {
+        Transaction[] t = rc.getBlock(rc.getRoundNum() - 1);
+        int[] encodedMessage = null;
+        DecodedMessage decodedMessage;
+
+        for(int i = 0; i < t.length; i++) {
+            encodedMessage = t[i].getMessage();
+
+            if (controller.validateMessage(encodedMessage, rc.getRoundNum() - 1)){
+                //System.out.println("Message is valid, decoding...");
+                decodedMessage = controller.decodeMessage(encodedMessage, rc.getRoundNum() - 1);
+                //get tile information
+                Tile tempTile = decodedMessage.getTile(0);
+                //System.out.println("Location: " + tempTile.getX() + ", " + tempTile.getY());
+
+                if(tempTile.getLocationType() == 'C') {
+                    map.addSoup(toMapLocation(tempTile), tempTile.getSoupAmt());
+                }
+
+                if(rc.getType().equals(RobotType.HQ)) {
+                    HQueue.add(tempTile);
+                    System.out.println("Adding to Quere");
+                }
+
+                previousMessageTurn = rc.getRoundNum();
+            } else {
+                System.out.println("Invalid message");
+            }
+        }
+
+
+    }
+
+    public static void publishTiles() throws GameActionException {
+        if(publishQueue.size() <= 0)
+            return;
+
+        int encodedMessage[];
+        controller.createMapMessage(rc.getRoundNum(), previousMessageTurn);
+        previousMessageTurn = rc.getRoundNum();
+
+        for(int i = 0; i < Math.min(publishQueue.size(), 6); i++) {
+            controller.encodeLocation(publishQueue.remove(0));
+        }
+        encodedMessage = controller.getEncodedMessage();
+        rc.submitTransaction(encodedMessage, transactionPrice);
     }
 
     /**
@@ -387,13 +466,16 @@ public strictfp class RobotPlayer {
      * Used for the HQ to tell a miner it just created what its purpose is
      * @param command
      */
-    static void commandMiner(char command) throws GameActionException {
+    static void commandMiner(char command, int destX, int destY) throws GameActionException {
         if(rc.getTeamSoup() < transactionPrice) {
             System.out.println("ERR - commandMiner: called with not enough soup");
             return;
         }
         int[] message = new int[7];
+        message[2] = rc.getRoundNum()*5 + 11;
         message[0] = command;
+        message[3] = destX;
+        message[4] = destY;
         rc.submitTransaction(message, transactionPrice);
         //System.out.println("Submitting message on turn " + rc.getRoundNum());
     }
@@ -414,6 +496,7 @@ public strictfp class RobotPlayer {
         controller.encodeLocation(hq);
         encodedMessage = controller.getEncodedMessage();
         rc.submitTransaction(encodedMessage, transactionPrice);
+        previousMessageTurn = 1;
     }
 
     /**
@@ -424,17 +507,30 @@ public strictfp class RobotPlayer {
     static int findPurpose() throws GameActionException {
         //debugBlockchain(rc.getRoundNum() - 1);
         Transaction[] t = rc.getBlock(birthday);
-        int[] message = t[0].getMessage();
-        System.out.println("Message: " + (char)message[0]);
-        if(message[0] == GATHER_SOUP)
-            return TRAVEL_TO_SOUP;
-        if(message[0] == MAKE_DSCHOOL)
-            return BUILD_DESIGN_SCHOOL;
-        if(message[0] == MAKE_FCENTER)
-            return BUILD_FULFILLMENT_CENTER;
-        if(message[0] == CEXPLORE)
-            return EXPLORE;
+        int[] message = null;
+        for(int i = 0; i < t.length; i ++) {
+            message = t[i].getMessage();
+            if((message[2] - 11)/5 == birthday) {
+                System.out.println("Message: " + (char)message[0]);
+                if(message[0] == GATHER_SOUP)
+                    return TRAVEL_TO_SOUP;
+                if(message[0] == MAKE_DSCHOOL)
+                    return BUILD_DESIGN_SCHOOL;
+                if(message[0] == MAKE_FCENTER)
+                    return BUILD_FULFILLMENT_CENTER;
+                if(message[0] == CEXPLORE)
+                    return EXPLORE;
+                if(message[0] == SOUP_TREK) {
+                    preferredDeposit = new MapLocation(message[3], message[4]);
+                    return TREK_TO_SOUP;
+                }
+            }
+        }
         return -1;
+    }
+
+    static void findPotentialEnemyHQ() {
+
     }
 
     static void initializeRobot() throws GameActionException {
@@ -449,6 +545,7 @@ public strictfp class RobotPlayer {
         map = new LocalMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
         enemyTeam = rc.getTeam().opponent();
+        findPotentialEnemyHQ();
         goal = STARTUP;
     }
 
@@ -480,7 +577,8 @@ public strictfp class RobotPlayer {
                 //get tile information
                 Tile tempTile;
                 hqLocation = toMapLocation(decodedMessage.getTile(0));
-                System.out.println("Location: " + hqLocation.x + ", " + hqLocation.y);
+                //System.out.println("Location: " + hqLocation.x + ", " + hqLocation.y);
+                previousMessageTurn = 1;
                 return;
             }
         }
@@ -799,7 +897,13 @@ public strictfp class RobotPlayer {
     public static void findSoup() throws GameActionException {
         MapLocation[] soups = rc.senseNearbySoup();
         for(int i = 0; i < soups.length; i++) {
-            map.addSoup(soups[i], rc.senseSoup(soups[i]));
+            if(!map.hasSoup(soups[i])) {
+                map.addSoup(soups[i], rc.senseSoup(soups[i]));
+                Tile temp = new Tile(soups[i].x, soups[i].y);
+                temp.setLocationType('C'); //Soup
+                temp.setSoupAmt(rc.senseSoup(soups[i])/4);
+                //publishQueue.add(temp);
+            }
         }
     }
 
