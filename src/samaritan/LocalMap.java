@@ -346,4 +346,6 @@ public class LocalMap {
         System.out.println("ERR - No such for found.");
     }
 
+    public Tile getTile(MapLocation tileLocation){return this.map[tileLocation.x][tileLocation.y];}
+
 }
