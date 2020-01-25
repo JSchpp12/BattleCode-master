@@ -131,15 +131,15 @@ public strictfp class RobotPlayer {
         Tile closestSoup;
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!" + " TCount: " + rc.getRoundNum());
-            scanArea(true, false, true);
             addPlacesOfInterestToPublishQueue();
+            scanArea(false, false, true);
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
             hqLocation = rc.getLocation();
             findPotentialEnemyHQ();
             goal = BUILD_MINER;
         }
 
-        if(goal == BUILD_MINER) {
+        if(goal == BUILD_MINER && rc.getRoundNum() > 20 && rc.getRoundNum() < 22) {
             closestSoup = map.nextSoup();
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
@@ -190,9 +190,6 @@ public strictfp class RobotPlayer {
                 }
             }
         }
-
-        if(rc.getRoundNum() > 1)
-            readTiles();
     }
 
     static void runMiner() throws GameActionException {
@@ -422,7 +419,6 @@ public strictfp class RobotPlayer {
             }
         }
         checkForEnemyHQ();
-        publishTiles();
     }
 
     static void runNetGun() throws GameActionException {
@@ -460,7 +456,7 @@ public strictfp class RobotPlayer {
                 decodedMessage = controller.decodeMessage(encodedMessage, rc.getRoundNum() - 1);
                 //get tile information
                 Tile tempTile = decodedMessage.getTile(0);
-                //System.out.println("Location: " + tempTile.getX() + ", " + tempTile.getY());
+                System.out.println("Location: " + tempTile.getX() + ", " + tempTile.getY() + ", " + tempTile.getLocationType());
 
                 if(tempTile.getLocationType() == 'C') {
                     map.addSoup(toMapLocation(tempTile), tempTile.getSoupAmt());
@@ -488,17 +484,23 @@ public strictfp class RobotPlayer {
     public static void publishTiles() throws GameActionException {
         if(publishQueue.size() <= 0)
             return;
+        System.out.println("Running publishTiles. queue size: " + publishQueue.size());
 
         int encodedMessage[];
         controller.createMapMessage(rc.getRoundNum(), previousMessageTurn);
         previousMessageTurn = rc.getRoundNum();
 
-        for(int i = 0; i < Math.min(publishQueue.size(), 6); i++) {
+        int s = publishQueue.size();
+        for(int i = 0; i < Math.min(s, 6); i++) {
             controller.encodeLocation(publishQueue.remove(0));
-            System.out.println("Publish TIle");
+            System.out.println("Publish TIle" + ", Bytecodes left: " + Clock.getBytecodesLeft());
         }
+        System.out.println("Bytecodes left: " + Clock.getBytecodesLeft());
         encodedMessage = controller.getEncodedMessage();
+        System.out.println("Bytecodes left: " + Clock.getBytecodesLeft());
         rc.submitTransaction(encodedMessage, transactionPrice);
+        System.out.println("Bytecodes left: " + Clock.getBytecodesLeft());
+        System.out.println("Message sent");
     }
 
     /**
@@ -553,6 +555,7 @@ public strictfp class RobotPlayer {
         Tile temp = new Tile(x, y);
 
         publishQueue.add(temp);
+        System.out.println("Adding HQ Location");
         /*int[] encodedMessage;
 
         controller.createMapMessage(rc.getRoundNum(), 0);
@@ -614,20 +617,18 @@ public strictfp class RobotPlayer {
 
     static void initializeRobot() throws GameActionException {
         //System.out.println("I'm a " + rc.getType() + ", my ID is " + rc.getID() + " and I just got created!"  + " TCount: " + rc.getRoundNum());
-        char internRobotId;
-        internRobotId = convertRobotTypeToChar(rc.getType());
 
         turnCount = 0;
         birthday = rc.getRoundNum() - 1;
 
         controller = new MessageController();
-        map = new LocalMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
+        map = new LocalMap(rc.getLocation(), rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
         enemyTeam = rc.getTeam().opponent();
         goal = STARTUP;
     }
 
-    public static void startOfTurn() {
+    public static void startOfTurn() throws GameActionException {
         while(turnCount > 10 && rc.getCooldownTurns() >= 1) { //If the robot wont be able to move anyway, just skip the turn
             //System.out.println("Pollution too high, skipping turn: " + rc.getRoundNum());
             Clock.yield();
@@ -641,6 +642,8 @@ public strictfp class RobotPlayer {
         //Landscaper: if next to building that is damaged, pick up dirt from it
 
         //Read Blockchain
+        if(rc.getRoundNum() > 1)
+            readTiles();
     }
 
     public static void endOfTurn() throws GameActionException {
@@ -995,19 +998,21 @@ public strictfp class RobotPlayer {
 
     public static void scanElevation(MapLocation location) throws GameActionException {
 
-        //int elevation = rc.senseElevation(location); //get elevation data
-        //map.recordElevation(location, elevation); //store elevation data
+        int elevation = rc.senseElevation(location); //get elevation data
+        map.recordElevation(location, elevation); //store elevation data
     }
 
     public static void findSoup() throws GameActionException {
         MapLocation[] soups = rc.senseNearbySoup();
         for(int i = 0; i < soups.length; i++) {
             if(!map.hasSoup(soups[i])) {
-                map.addSoup(soups[i], rc.senseSoup(soups[i]));
+                int amnt = rc.senseSoup(soups[i]);
+                map.addSoup(soups[i], amnt);
                 Tile temp = new Tile(soups[i].x, soups[i].y);
                 temp.setLocationType('C'); //Soup
-                temp.setSoupAmt(rc.senseSoup(soups[i])/4);
-                //publishQueue.add(temp);
+                temp.setSoupAmt(amnt/4);
+                publishQueue.add(temp);
+                System.out.println("Adding soup tile: " + temp.getX() + ", " + temp.getY() + ", Bytcodes left: " + Clock.getBytecodesLeft());
             }
         }
     }

@@ -18,12 +18,12 @@ public class LocalMap {
      * @param sizeX size of the map along the x-axis
      * @param sizeY size of the map along the y-axis
      */
-    public LocalMap(MapLocation inInitLocation, char robotType, int sizeX, int sizeY) {
+    public LocalMap(MapLocation inInitLocation, int sizeX, int sizeY) {
         int x = inInitLocation.x;
         int y = inInitLocation.y;
         this.map = new Tile[sizeX][sizeY];
         this.map[inInitLocation.x][inInitLocation.y] = new Tile(x, y); //create new tile
-        this.map[inInitLocation.x][inInitLocation.y].setLocationType(robotType); //set robot at the new tile
+        this.map[inInitLocation.x][inInitLocation.y].setLocationType('N'); //set robot at the new tile
     }
 
     /**

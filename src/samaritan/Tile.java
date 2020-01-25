@@ -18,6 +18,7 @@ import static samaritan.RobotPlayer.rc;
  * K - DESIGN_SCHOOL
  * L - DELIVERY_DRONE
  * M - FULFILLMENT_CENTER
+ * N - SELF
  */
 
 public class Tile {
