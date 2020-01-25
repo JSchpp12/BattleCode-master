@@ -477,8 +477,6 @@ public strictfp class RobotPlayer {
                 System.out.println("Invalid message");
             }
         }
-
-
     }
 
     public static void publishTiles() throws GameActionException {

@@ -14,7 +14,6 @@ public class LocalMap {
     /**
      * Create a new localMap object -- used when robot is created
      * @param inInitLocation mapLocation object containing the location information to be written
-     * @param robotType object type that is being stored on the map, should be a robot or building at this point
      * @param sizeX size of the map along the x-axis
      * @param sizeY size of the map along the y-axis
      */
