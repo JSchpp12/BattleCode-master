@@ -1,4 +1,5 @@
 package samaritan;
+import battlecode.common.Clock;
 import samaritan.Tile;
 
 import java.util.*;
@@ -184,7 +185,7 @@ public class EncodedMessage {
     public int getInt(int index){
         int value;
         if (this._messageData[index] != null){
-            //System.out.println("Converting - " + this._messageData[index].toString());
+            System.out.println("Converting - " + this._messageData[index].toString()  + ", Bytecodes left: " + Clock.getBytecodesLeft());
             value = 0;
             for (int i = 0; i < this._messageData[index].length(); i++){
                 value += this._messageData[index].get(i) ? (1 << i) : 0;

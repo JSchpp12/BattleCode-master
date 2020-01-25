@@ -569,6 +569,8 @@ public strictfp class RobotPlayer {
 
     /**
      * Used for the miner to determine its first goal
+     *
+     * Make this use encoding for the x and y so that the enemy can't use it
      * @return
      * @throws GameActionException
      */
