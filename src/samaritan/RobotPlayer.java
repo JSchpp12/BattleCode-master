@@ -1,10 +1,7 @@
 package samaritan;
 import battlecode.common.*;
 
-import java.lang.reflect.MalformedParameterizedTypeException;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.Queue;
 
 import static battlecode.common.Direction.*;
 
@@ -55,6 +52,7 @@ public strictfp class RobotPlayer {
     static int BUILD_WALL_BUILDERS = 17;
     static int QUEUE = 18;
     static int TREK_TO_SOUP = 19;
+    static int ATTACK = 20;
 
     //Commands
     static char GATHER_SOUP = 'S';
@@ -63,14 +61,14 @@ public strictfp class RobotPlayer {
     static char CEXPLORE = 'E';
     static char SOUP_TREK = 'T';
 
-    static int minersNeeded = 3;
+    static int minersNeeded = 4;
     static int landscapersNeeded = 8;
     static int dronesNeeded = 1;
     static int transactionPrice = 1;
     static int buildingSpace = 3;
-    static int explorersNeeded = 1;
+    static int explorersNeeded = 0;
 
-    static int wallBuildingTurn = 400;
+    static int wallBuildingTurn = 200;
 
     static int thisRound;
 
@@ -104,14 +102,8 @@ public strictfp class RobotPlayer {
         while (true) {
             // Try/catch blocks stop unhandled exceptions, which cause your robot to explode
             try {
-                while(turnCount > 10 && rc.getCooldownTurns() >= 1) { //If the robot wont be able to move anyway, just skip the turn
-                    //System.out.println("Pollution too high, skipping turn: " + rc.getRoundNum());
-                    Clock.yield();
-                }
-                thisRound = rc.getRoundNum();
-                turnCount += 1;
-                // Here, we've separated the controls into a different method for each RobotType.
-                // You can add the missing ones or rewrite this into your own control structure.
+
+                startOfTurn();
 
                 switch (rc.getType()) {
                     case MINER:              runMiner();             break;
@@ -124,11 +116,8 @@ public strictfp class RobotPlayer {
                     case DESIGN_SCHOOL:      runDesignSchool();      break;
                     case FULFILLMENT_CENTER: runFulfillmentCenter(); break;
                 }
-                if(rc.getRoundNum() != thisRound) { //Checks is more than 1 round was needed to run this turn
-                    System.out.println("Bytecode Limit Exceeded - Round Started: " + thisRound + ". Round Finished: " + rc.getRoundNum());
-                    //if(turnCount <= 10)
-                        //System.out.print(" On Startup");
-                }
+
+                endOfTurn();
                 Clock.yield();
 
             } catch (Exception e) {
@@ -143,8 +132,10 @@ public strictfp class RobotPlayer {
         if(goal == STARTUP) {
             System.out.println("HQ Initiating Startup!" + " TCount: " + rc.getRoundNum());
             scanArea(true, false, true);
-            publishHQLocation();
+            addPlacesOfInterestToPublishQueue();
             //totalSoupNearby = map.totalSoup(rc.getLocation(), rc.getCurrentSensorRadiusSquared());
+            hqLocation = rc.getLocation();
+            findPotentialEnemyHQ();
             goal = BUILD_MINER;
         }
 
@@ -215,7 +206,8 @@ public strictfp class RobotPlayer {
             else
                 goal = TRAVEL_TO_SOUP;
             scanArea(true, true, true);
-            findHQ();
+            findHQ(); //This function can be replaced by the
+            findPotentialEnemyHQ();
             motherRefinery = hqLocation;
             preferredDeposit = toMapLocation(map.nextSoup());
 
@@ -232,7 +224,9 @@ public strictfp class RobotPlayer {
                 goal = MINE;
             } else {
                 Direction direction = rc.getLocation().directionTo(preferredDeposit);
+                MapLocation startingSpot = rc.getLocation();
                 forceMove(direction);
+                addStink(startingSpot);
             }
 
         } if(goal == MINE) {
@@ -261,7 +255,9 @@ public strictfp class RobotPlayer {
                 }
             }
             if(goal == DEPOSIT) {
-                forceMove(rc.getLocation().directionTo(motherRefinery));
+                MapLocation startingSpot = rc.getLocation();
+                forceMove(startingSpot.directionTo(motherRefinery));
+                addStink(startingSpot);
             }
 
         } if(goal == EXPLORE) {
@@ -307,6 +303,7 @@ public strictfp class RobotPlayer {
     static void runDesignSchool() throws GameActionException {
         if(goal == STARTUP) {
             findHQ();
+            findPotentialEnemyHQ();
             buildDirection = rc.getLocation().directionTo(hqLocation);
             goal = BUILD_WALL_BUILDERS;
 
@@ -315,9 +312,21 @@ public strictfp class RobotPlayer {
                 if(tryBuild(RobotType.LANDSCAPER, buildDirection)) {
                     buildDirection = buildDirection.rotateLeft();
                     landscapersNeeded--;
+                    if(landscapersNeeded <= 0)
+                        goal = ATTACK;
+                }
+            }
+        } if(goal == ATTACK) {
+            if(enemyHQ != null) {
+                buildDirection = rc.getLocation().directionTo(enemyHQ);
+                if(rc.getTeamSoup() >= RobotType.LANDSCAPER.cost + transactionPrice) {
+                    if(forceBuild(RobotType.LANDSCAPER, buildDirection)) {
+                        commandMiner('A', enemyHQ.x, enemyHQ.y);
+                    }
                 }
             }
         }
+        readTiles();
     }
 
     static void runFulfillmentCenter() throws GameActionException {
@@ -335,8 +344,13 @@ public strictfp class RobotPlayer {
     static void runLandscaper() throws GameActionException {
         if(goal == STARTUP) {
             findHQ();
+            findPotentialEnemyHQ();
             perch = getPerch();
-            goal = FIND_PERCH;
+            int temp = findPurpose(); //Get its command form the HQ
+            if(temp != -1)
+                goal = temp;
+            else
+                goal = FIND_PERCH;
 
         } if(goal == FIND_PERCH) {
             MapLocation startingSpot = rc.getLocation();
@@ -354,6 +368,29 @@ public strictfp class RobotPlayer {
                 tryDig(hqLocation.directionTo(rc.getLocation()));
             }
 
+        } else if(goal == ATTACK) {
+            if(turnCount < 50 && turnCount > 25) {
+                tryDig(rc.getLocation().directionTo(hqLocation).rotateRight().rotateRight());
+            }
+
+            RobotInfo[] robots = rc.senseNearbyRobots(2, enemyTeam);
+            for(int i = 0; i < robots.length; i++) {
+                if(robots[i].getType().equals(RobotType.HQ)) {
+                    if(rc.getDirtCarrying() <= 0) {
+                        tryDig(randomDirection());
+                    } else {
+                        tryDump(rc.getLocation().directionTo(robots[i].getLocation()));
+                    }
+                    break;
+                }
+            }
+
+            if(turnCount > 100 && rc.getLocation().distanceSquaredTo(enemyHQ) > 10) {
+                rc.disintegrate();
+            }
+            MapLocation startingSpot = rc.getLocation();
+            forceMove(startingSpot.directionTo(enemyHQ));
+            addStink(startingSpot);
         }
     }
 
@@ -375,7 +412,7 @@ public strictfp class RobotPlayer {
 
         } if(goal == EXPLORE) {
             if(rc.getLocation().equals(explorationDestination)) {
-                scanArea(false, true, true);
+                scanArea(false, false, true);
                 map.disperseFog(explorationDestination);
                 explorationDestination = map.getClosestFog(rc.getLocation());
                 if(explorationDestination == null)
@@ -384,11 +421,30 @@ public strictfp class RobotPlayer {
                 forceMove(rc.getLocation().directionTo(explorationDestination));
             }
         }
+        checkForEnemyHQ();
         publishTiles();
     }
 
     static void runNetGun() throws GameActionException {
 
+    }
+
+    /**
+     * this method could be changed to instead use the 3 possible locations of the HQ and deduce the HQ location
+     */
+    public static void checkForEnemyHQ() {
+        if(enemyHQ != null)
+            return;
+        RobotInfo[] robots = rc.senseNearbyRobots(rc.getCurrentSensorRadiusSquared(), enemyTeam);
+        for(int i = 0; i < robots.length; i++) {
+            if(robots[i].getType().equals(RobotType.HQ)) {
+                System.out.println("Found!");
+                enemyHQ = robots[i].getLocation();
+                Tile tempTile = new Tile(enemyHQ.x, enemyHQ.y);
+                tempTile.setLocationType('H');
+                publishQueue.add(tempTile);
+            }
+        }
     }
 
     public static void readTiles() throws GameActionException {
@@ -400,7 +456,7 @@ public strictfp class RobotPlayer {
             encodedMessage = t[i].getMessage();
 
             if (controller.validateMessage(encodedMessage, rc.getRoundNum() - 1)){
-                //System.out.println("Message is valid, decoding...");
+                System.out.println("Message is valid, decoding...");
                 decodedMessage = controller.decodeMessage(encodedMessage, rc.getRoundNum() - 1);
                 //get tile information
                 Tile tempTile = decodedMessage.getTile(0);
@@ -408,6 +464,11 @@ public strictfp class RobotPlayer {
 
                 if(tempTile.getLocationType() == 'C') {
                     map.addSoup(toMapLocation(tempTile), tempTile.getSoupAmt());
+                }
+
+                if(tempTile.getLocationType() == 'H' && rc.getType().equals(RobotType.DESIGN_SCHOOL)) {
+                    enemyHQ = toMapLocation(tempTile);
+                    System.out.println("Saving Enemy HQ");
                 }
 
                 if(rc.getType().equals(RobotType.HQ)) {
@@ -434,6 +495,7 @@ public strictfp class RobotPlayer {
 
         for(int i = 0; i < Math.min(publishQueue.size(), 6); i++) {
             controller.encodeLocation(publishQueue.remove(0));
+            System.out.println("Publish TIle");
         }
         encodedMessage = controller.getEncodedMessage();
         rc.submitTransaction(encodedMessage, transactionPrice);
@@ -485,10 +547,13 @@ public strictfp class RobotPlayer {
      * Publishes location of hq at start of game
      * @throws GameActionException
      */
-    static void publishHQLocation() throws GameActionException {
+    static void addPlacesOfInterestToPublishQueue() throws GameActionException {
         int x = rc.getLocation().x;
         int y = rc.getLocation().y;
-        int[] encodedMessage;
+        Tile temp = new Tile(x, y);
+
+        publishQueue.add(temp);
+        /*int[] encodedMessage;
 
         controller.createMapMessage(rc.getRoundNum(), 0);
         Tile hq = new Tile(x, y);
@@ -496,7 +561,7 @@ public strictfp class RobotPlayer {
         controller.encodeLocation(hq);
         encodedMessage = controller.getEncodedMessage();
         rc.submitTransaction(encodedMessage, transactionPrice);
-        previousMessageTurn = 1;
+        previousMessageTurn = 1;*/
     }
 
     /**
@@ -524,13 +589,27 @@ public strictfp class RobotPlayer {
                     preferredDeposit = new MapLocation(message[3], message[4]);
                     return TREK_TO_SOUP;
                 }
+                if(message[0] == 'A') {
+                    System.out.println("Attacking sir");
+                    enemyHQ = new MapLocation(message[3], message[4]);
+                    return ATTACK;
+                }
             }
         }
         return -1;
     }
 
     static void findPotentialEnemyHQ() {
+        /*//Horizontal
+        MapLocation horizontal = new MapLocation(hqLocation.x, rc.getMapHeight() - hqLocation.y);
+        possibleEnemyHQ.add(horizontal);
 
+        //Vertical
+        MapLocation vertical = new MapLocation(rc.getMapWidth() - hqLocation.x, hqLocation.y);
+        possibleEnemyHQ.add(vertical);
+
+        MapLocation rotational = new MapLocation(rc.getMapWidth() - hqLocation.x, rc.getMapHeight() - hqLocation.y);
+        possibleEnemyHQ.add(rotational);*/
     }
 
     static void initializeRobot() throws GameActionException {
@@ -545,8 +624,34 @@ public strictfp class RobotPlayer {
         map = new LocalMap(rc.getLocation(), internRobotId, rc.getMapWidth(), rc.getMapHeight()); //create the local map
         myTeam = rc.getTeam();
         enemyTeam = rc.getTeam().opponent();
-        findPotentialEnemyHQ();
         goal = STARTUP;
+    }
+
+    public static void startOfTurn() {
+        while(turnCount > 10 && rc.getCooldownTurns() >= 1) { //If the robot wont be able to move anyway, just skip the turn
+            //System.out.println("Pollution too high, skipping turn: " + rc.getRoundNum());
+            Clock.yield();
+        }
+        thisRound = rc.getRoundNum();
+        turnCount += 1;
+
+        //scan 4 enemies
+        //hq/netgun: if drone in range, shoot it down
+        //drone: if can pick up enemy unit, do so
+        //Landscaper: if next to building that is damaged, pick up dirt from it
+
+        //Read Blockchain
+    }
+
+    public static void endOfTurn() throws GameActionException {
+
+        publishTiles();
+
+        if(rc.getRoundNum() != thisRound) { //Checks is more than 1 round was needed to run this turn
+            System.out.println("Bytecode Limit Exceeded - Round Started: " + thisRound + ". Round Finished: " + rc.getRoundNum());
+            //if(turnCount <= 10)
+            //System.out.print(" On Startup");
+        }
     }
 
     public static void findMotherBuilding() {
