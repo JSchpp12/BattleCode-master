@@ -3,6 +3,9 @@ import battlecode.common.*;
 
 import java.util.ArrayList;
 
+import static battlecode.common.Direction.NORTH;
+import static battlecode.common.Direction.NORTHEAST;
+
 public class LocalMap {
     Tile[][] map;
     int currentX, currentY;
@@ -202,6 +205,38 @@ public class LocalMap {
             return false;
         }
     }
+
+    /**
+     * check if spaces surrounding target location are clear and passable for school construction
+     * @param mapLocation designated place for school to be built
+     * @return
+     * 0 - valid
+     * 1 - (invalid) impassable turrain around
+     * 2 - (invalid) surroundings are off map
+     *
+     */
+    /*
+    public int locationSurroundingClear(MapLocation mapLocation){
+        boolean complete = false;
+        MapLocation testLocation = mapLocation.add(NORTHEAST);
+
+        while(!complete){
+            //ensure map location exsist
+            if (this.map[testLocation.x][testLocation.y] != null){
+                //ensure space is empty
+                if (this.map[testLocation.x][testLocation.y].getLocationType() == '-'){
+                    //check elevation
+                }
+            }else{
+                //map does not exist OR out of sensor range
+
+
+            }
+        }
+    }
+
+     */
+
     /**
      * Update the amount of pollution at a location -- will throw exception if tile does not exist
      * @param inLocation target location
