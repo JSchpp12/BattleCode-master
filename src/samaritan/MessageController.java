@@ -17,7 +17,7 @@ public class MessageController {
         int teamId;
         this._encodedMessage = new MyEncodedMessage();
         teamId = calculateTeamId(turnNumber);
-        System.out.println("Team Id Calculated as - " + teamId);
+        //System.out.println("Team Id Calculated as - " + teamId);
 
         this._encodedMessage.createBitset(2);
         this._encodedMessage.createHeader(teamId, previousMessageTurn);

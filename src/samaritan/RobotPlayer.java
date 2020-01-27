@@ -61,7 +61,7 @@ public strictfp class RobotPlayer {
     static char CEXPLORE = 'E';
     static char SOUP_TREK = 'T';
 
-    static int minersNeeded = 4;
+    static int minersNeeded = 1;
     static int landscapersNeeded = 8;
     static int dronesNeeded = 1;
     static int transactionPrice = 1;
@@ -202,9 +202,13 @@ public strictfp class RobotPlayer {
                 goal = temp;
             else
                 goal = TRAVEL_TO_SOUP;
-            scanArea(true, true, true);
+            //System.out.println("Q1: " + map.hasSoup(new MapLocation(32, 28)));
             findHQ(); //This function can be replaced by the
+            //System.out.println("Q2: " + map.hasSoup(new MapLocation(32, 28)));
             findPotentialEnemyHQ();
+            //System.out.println("Q3: " + map.hasSoup(new MapLocation(32, 28)));
+            scanArea(false, false, true);
+            //System.out.println("Q4: " + map.hasSoup(new MapLocation(32, 28)));
             motherRefinery = hqLocation;
             preferredDeposit = toMapLocation(map.nextSoup());
 
@@ -398,9 +402,9 @@ public strictfp class RobotPlayer {
                 goal = temp;
             else
                 goal = EXPLORE;
-            scanArea(false, true, true);
             findHQ();
             findMotherBuilding();
+            scanArea(false, true, true);
             map.initFog(hqLocation);
             explorationDestination = map.getFirstFog(rc.getLocation());
 
@@ -457,7 +461,7 @@ public strictfp class RobotPlayer {
                     handleTile(tempTile);
                 }
 
-                previousMessageTurn = rc.getRoundNum();
+                previousMessageTurn = rc.getRoundNum() - 1;
 
             } else {
                 if((encodedMessage[2] - 11)/5 != rc.getRoundNum() - 1)
@@ -469,7 +473,7 @@ public strictfp class RobotPlayer {
     public static void publishTiles() throws GameActionException {
         if(publishQueue.size() <= 0)
             return;
-        System.out.println("Running publishTiles. queue size: " + publishQueue.size());
+        //System.out.println("Running publishTiles. queue size: " + publishQueue.size());
 
         int encodedMessage[];
         controller.createMapMessage(rc.getRoundNum(), previousMessageTurn);
@@ -481,15 +485,16 @@ public strictfp class RobotPlayer {
         }
         encodedMessage = controller.getEncodedMessage();
         rc.submitTransaction(encodedMessage, transactionPrice);
-        System.out.println("Message sent");
+        //System.out.println("Message sent");
     }
 
     public static void handleTile(Tile tempTile) {
-        System.out.println("Reading Location: " + tempTile.getX() + ", " + tempTile.getY() + ", " + tempTile.getLocationType());
+        //System.out.println("Reading Location: " + tempTile.getX() + ", " + tempTile.getY() + ", " + tempTile.getLocationType());
 
         if(tempTile.getLocationType() == 'C') {
             if(!map.hasSoup(toMapLocation(tempTile))) {
-                map.addSoup(toMapLocation(tempTile), tempTile.getSoupAmt());
+                //System.out.println("New Soup SPot Found!");
+                map.addSoup(toMapLocation(tempTile), 100);
                 if(rc.getType().equals(RobotType.HQ)) {
                     HQueue.add(tempTile);
                     System.out.println("HQ adding soup to queue");
@@ -650,13 +655,13 @@ public strictfp class RobotPlayer {
         //Landscaper: if next to building that is damaged, pick up dirt from it
 
         //Read Blockchain
-        if(rc.getRoundNum() > 1)
+        if(turnCount > 1)
             readTiles();
     }
 
     public static void endOfTurn() throws GameActionException {
 
-        if(turnCount > 10) {
+        if(turnCount > 1) {
             scanArea(false, false, true); //Scan area before turn
         }
         publishTiles();
@@ -682,7 +687,7 @@ public strictfp class RobotPlayer {
      * Saves the location of the HQ
      */
     static void findHQ() throws GameActionException {
-        System.out.println("Starting findHQ");
+        //System.out.println("Starting findHQ");
         int firstTurn = -1;
         int turn = rc.getRoundNum() - 1;
         Transaction[] t;
@@ -696,7 +701,7 @@ public strictfp class RobotPlayer {
                 encodedMessage = t[i].getMessage();
                 if (controller.validateMessage(encodedMessage, turn)){
                     firstTurn = turn;
-                    System.out.println("Most Recent Message Turn: " + turn);
+                    //System.out.println("Most Recent Message Turn: " + turn);
                 }
             }
             turn--;
@@ -710,7 +715,7 @@ public strictfp class RobotPlayer {
             for(int i = 0; i < t.length; i++) {
                 encodedMessage = t[i].getMessage();
                 if (controller.validateMessage(encodedMessage, firstTurn)) {
-                    System.out.println("Decoding turn: " + firstTurn);
+                    //System.out.println("Decoding turn: " + firstTurn);
                     decodedMessage = controller.decodeMessage(encodedMessage, firstTurn);
                     //get tile information
                     for(int j = 0; j < decodedMessage.getNumTiles(); j++) {
@@ -1034,6 +1039,7 @@ public strictfp class RobotPlayer {
     }
 
     public static void findSoup() throws GameActionException {
+        //System.out.println("Qf: " + map.hasSoup(new MapLocation(32, 28)));
         MapLocation[] soups = rc.senseNearbySoup();
         for(int i = 0; i < soups.length; i++) {
             if(!map.hasSoup(soups[i])) {

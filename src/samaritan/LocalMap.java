@@ -76,6 +76,7 @@ public class LocalMap {
         int x, y;
         x = location.x;
         y = location.y;
+        System.out.println("Saving soup to map: " + x + ", " + y);
         if (this.map[x][y] != null) {
             if(!this.map[x][y].getSoup())
                 soups.add(this.map[location.x][location.y]);
