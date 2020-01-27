@@ -76,7 +76,7 @@ public class LocalMap {
         int x, y;
         x = location.x;
         y = location.y;
-        System.out.println("Saving soup to map: " + x + ", " + y);
+        //System.out.println("Saving soup to map: " + x + ", " + y);
         if (this.map[x][y] != null) {
             if(!this.map[x][y].getSoup())
                 soups.add(this.map[location.x][location.y]);
@@ -246,7 +246,7 @@ public class LocalMap {
         }
     }
 
-    /*public Tile closestSoup(MapLocation location) {
+    public Tile closestSoup(MapLocation location) {
         //System.out.println("Running Closest Soup");
         int closestDistance = 100000;
         Tile closestSoup = null;
@@ -262,7 +262,7 @@ public class LocalMap {
         }
         return closestSoup;
 
-    }*/
+    }
 
     public Tile nextSoup() {
         if(soups.size() <= 0)
