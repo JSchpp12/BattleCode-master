@@ -3,7 +3,7 @@ package samaritan;
 import samaritan.Tile;
 
 public class MessageController {
-    private EncodedMessage _encodedMessage;
+    private MyEncodedMessage _encodedMessage;
     private int _numIntsEncoded;
     private final int[] _intOrder = {2, 0, 1, 3, 4, 5, 6};
 
@@ -15,10 +15,11 @@ public class MessageController {
      */
     public void createMapMessage(int turnNumber, int previousMessageTurn){
         int teamId;
-        this._encodedMessage = new EncodedMessage();
+        this._encodedMessage = new MyEncodedMessage();
         teamId = calculateTeamId(turnNumber);
-        //System.out.println("Team Id Calculated as - " + teamId);
+        System.out.println("Team Id Calculated as - " + teamId);
 
+        this._encodedMessage.createBitset(2);
         this._encodedMessage.createHeader(teamId, previousMessageTurn);
         this._numIntsEncoded = 1;
     }
@@ -31,7 +32,7 @@ public class MessageController {
      */
     public boolean validateMessage(int[] message, int messageTurn){
         int decodedId;
-        this._encodedMessage = new EncodedMessage();
+        this._encodedMessage = new MyEncodedMessage();
 
         //get team id from message
         decodedId = this._encodedMessage.decodeTeamId(message);
@@ -48,10 +49,9 @@ public class MessageController {
         if (this._numIntsEncoded < 7){
             _encodedMessage.createBitset(this._intOrder[this._numIntsEncoded]);
             //this._message.createBitset(this._numIntsEncoded);
-            _encodedMessage.addInt(tile.getX(), 8);
-            _encodedMessage.addInt(tile.getY(), 8);
             _encodedMessage.addChar(tile.getLocationType());
-            _encodedMessage.addChar('0');
+            _encodedMessage.addInt(tile.getX());
+            _encodedMessage.addInt(tile.getY());
             this._numIntsEncoded++;
             return true;
         }else {
@@ -60,7 +60,7 @@ public class MessageController {
     }
 
     public int[] createCommandMessage(int commandType, int turnNumber){
-        this._encodedMessage = new EncodedMessage();
+        this._encodedMessage = new MyEncodedMessage();
         int[] message = new int[3];
         message[2] = calculateTeamId(turnNumber);
         message[0] = commandType;
@@ -68,7 +68,7 @@ public class MessageController {
     }
 
     public int[] createCommandMessage(int x, int y, int commandType, int turnNumber){
-        this._encodedMessage = new EncodedMessage();
+        this._encodedMessage = new MyEncodedMessage();
         int[] message = new int[4];
         message[2] = calculateTeamId(turnNumber);
         message[0] = commandType;
@@ -92,9 +92,9 @@ public class MessageController {
         for (int i = 0; i < message.length - 1; i++){
             //ensure that header is skipped here
             //ensure that message is not blank (noted by -1 value)
-            if (i != 2 && message[i] != -1) {
+            if (i != 2 && message[i] != -1 && message[i] != 0) {
                 this._encodedMessage.createBitset(i);
-                this._encodedMessage.addInt(message[i], 32);
+                this._encodedMessage.addBigInt(i, message[i]);
                 decodedMessage.addTile(this._encodedMessage.getTile(i));
                 numTiles++;
             }

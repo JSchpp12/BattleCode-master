@@ -139,7 +139,7 @@ public strictfp class RobotPlayer {
             goal = BUILD_MINER;
         }
 
-        if(goal == BUILD_MINER && rc.getRoundNum() > 20 && rc.getRoundNum() < 22) {
+        if(goal == BUILD_MINER) {
             closestSoup = map.nextSoup();
             Direction dir = rc.getLocation().directionTo(toMapLocation(closestSoup));
             if(rc.getTeamSoup() >= RobotType.MINER.cost + transactionPrice) {
@@ -207,9 +207,6 @@ public strictfp class RobotPlayer {
             findPotentialEnemyHQ();
             motherRefinery = hqLocation;
             preferredDeposit = toMapLocation(map.nextSoup());
-
-        } else {
-            scanArea(false, false, true); //Scan area before turn
 
         } if(goal == STANDBY) {
 
@@ -452,29 +449,19 @@ public strictfp class RobotPlayer {
             encodedMessage = t[i].getMessage();
 
             if (controller.validateMessage(encodedMessage, rc.getRoundNum() - 1)){
-                System.out.println("Message is valid, decoding...");
+                System.out.println("Message sent on turn " + (rc.getRoundNum() - 1) + " is valid, decoding...");
                 decodedMessage = controller.decodeMessage(encodedMessage, rc.getRoundNum() - 1);
                 //get tile information
-                Tile tempTile = decodedMessage.getTile(0);
-                System.out.println("Location: " + tempTile.getX() + ", " + tempTile.getY() + ", " + tempTile.getLocationType());
-
-                if(tempTile.getLocationType() == 'C') {
-                    map.addSoup(toMapLocation(tempTile), tempTile.getSoupAmt());
-                }
-
-                if(tempTile.getLocationType() == 'H' && rc.getType().equals(RobotType.DESIGN_SCHOOL)) {
-                    enemyHQ = toMapLocation(tempTile);
-                    System.out.println("Saving Enemy HQ");
-                }
-
-                if(rc.getType().equals(RobotType.HQ)) {
-                    HQueue.add(tempTile);
-                    System.out.println("Adding to Quere");
+                for(int j = 0; j < decodedMessage.getNumTiles(); j++) {
+                    Tile tempTile = decodedMessage.getTile(j);
+                    handleTile(tempTile);
                 }
 
                 previousMessageTurn = rc.getRoundNum();
+
             } else {
-                System.out.println("Invalid message");
+                if((encodedMessage[2] - 11)/5 != rc.getRoundNum() - 1)
+                    System.out.println("Invalid message on turn " + (rc.getRoundNum() - 1));
             }
         }
     }
@@ -491,14 +478,34 @@ public strictfp class RobotPlayer {
         int s = publishQueue.size();
         for(int i = 0; i < Math.min(s, 6); i++) {
             controller.encodeLocation(publishQueue.remove(0));
-            System.out.println("Publish TIle" + ", Bytecodes left: " + Clock.getBytecodesLeft());
         }
-        System.out.println("Bytecodes left: " + Clock.getBytecodesLeft());
         encodedMessage = controller.getEncodedMessage();
-        System.out.println("Bytecodes left: " + Clock.getBytecodesLeft());
         rc.submitTransaction(encodedMessage, transactionPrice);
-        System.out.println("Bytecodes left: " + Clock.getBytecodesLeft());
         System.out.println("Message sent");
+    }
+
+    public static void handleTile(Tile tempTile) {
+        System.out.println("Reading Location: " + tempTile.getX() + ", " + tempTile.getY() + ", " + tempTile.getLocationType());
+
+        if(tempTile.getLocationType() == 'C') {
+            if(!map.hasSoup(toMapLocation(tempTile))) {
+                map.addSoup(toMapLocation(tempTile), tempTile.getSoupAmt());
+                if(rc.getType().equals(RobotType.HQ)) {
+                    HQueue.add(tempTile);
+                    System.out.println("HQ adding soup to queue");
+                }
+            }
+        }
+
+        else if(tempTile.getLocationType() == 'H' && rc.getType().equals(RobotType.DESIGN_SCHOOL)) { //Fix
+            enemyHQ = toMapLocation(tempTile);
+            System.out.println("Saving Enemy HQ");
+        }
+
+        else if(tempTile.getLocationType() == 'I') {
+            hqLocation = toMapLocation(tempTile);
+            System.out.println("HQ Location: " + hqLocation.x + ", " + hqLocation.y);
+        }
     }
 
     /**
@@ -551,6 +558,7 @@ public strictfp class RobotPlayer {
         int x = rc.getLocation().x;
         int y = rc.getLocation().y;
         Tile temp = new Tile(x, y);
+        temp.setLocationType('I');
 
         publishQueue.add(temp);
         System.out.println("Adding HQ Location");
@@ -579,7 +587,7 @@ public strictfp class RobotPlayer {
         for(int i = 0; i < t.length; i ++) {
             message = t[i].getMessage();
             if((message[2] - 11)/5 == birthday) {
-                System.out.println("Message: " + (char)message[0]);
+                //System.out.println("Message: " + (char)message[0]);
                 if(message[0] == GATHER_SOUP)
                     return TRAVEL_TO_SOUP;
                 if(message[0] == MAKE_DSCHOOL)
@@ -636,7 +644,7 @@ public strictfp class RobotPlayer {
         thisRound = rc.getRoundNum();
         turnCount += 1;
 
-        //scan 4 enemies
+        //scanArea(false, true, false);
         //hq/netgun: if drone in range, shoot it down
         //drone: if can pick up enemy unit, do so
         //Landscaper: if next to building that is damaged, pick up dirt from it
@@ -648,6 +656,9 @@ public strictfp class RobotPlayer {
 
     public static void endOfTurn() throws GameActionException {
 
+        if(turnCount > 10) {
+            scanArea(false, false, true); //Scan area before turn
+        }
         publishTiles();
 
         if(rc.getRoundNum() != thisRound) { //Checks is more than 1 round was needed to run this turn
@@ -671,27 +682,47 @@ public strictfp class RobotPlayer {
      * Saves the location of the HQ
      */
     static void findHQ() throws GameActionException {
-
-        Transaction[] t = rc.getBlock(1);
+        System.out.println("Starting findHQ");
+        int firstTurn = -1;
+        int turn = rc.getRoundNum() - 1;
+        Transaction[] t;
         int[] encodedMessage = null;
         DecodedMessage decodedMessage;
 
-        for(int i = 0; i < t.length; i++) {
-            encodedMessage = t[i].getMessage();
+        while(firstTurn == -1) { //Find first turn
+            t = rc.getBlock(turn);
 
-            if (controller.validateMessage(encodedMessage, 1)){
-                //System.out.println("Message is valid, decoding...");
-                decodedMessage = controller.decodeMessage(encodedMessage, 1);
-                //get tile information
-                Tile tempTile;
-                hqLocation = toMapLocation(decodedMessage.getTile(0));
-                //System.out.println("Location: " + hqLocation.x + ", " + hqLocation.y);
-                previousMessageTurn = 1;
-                return;
+            for(int i = 0; i < t.length; i++) {
+                encodedMessage = t[i].getMessage();
+                if (controller.validateMessage(encodedMessage, turn)){
+                    firstTurn = turn;
+                    System.out.println("Most Recent Message Turn: " + turn);
+                }
             }
+            turn--;
         }
 
-        System.out.println("Invalid message");
+        previousMessageTurn = firstTurn;
+
+        while(firstTurn >= 1) {
+            t = rc.getBlock(firstTurn);
+
+            for(int i = 0; i < t.length; i++) {
+                encodedMessage = t[i].getMessage();
+                if (controller.validateMessage(encodedMessage, firstTurn)) {
+                    System.out.println("Decoding turn: " + firstTurn);
+                    decodedMessage = controller.decodeMessage(encodedMessage, firstTurn);
+                    //get tile information
+                    for(int j = 0; j < decodedMessage.getNumTiles(); j++) {
+                        Tile tempTile = decodedMessage.getTile(j);
+                        handleTile(tempTile);
+                    }
+
+                    firstTurn = decodedMessage.getLastMessageTurn();
+                }
+            }
+        }
+        /*System.out.println("Invalid message (HQ)");*/
     }
 
     /**
