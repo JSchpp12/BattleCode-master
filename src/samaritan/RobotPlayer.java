@@ -67,6 +67,7 @@ public strictfp class RobotPlayer {
     static int transactionPrice = 1;
     static int buildingSpace = 3;
     static int explorersNeeded = 0;
+    static int soupRadius = 35;
 
     static int wallBuildingTurn = 200;
 
@@ -84,6 +85,7 @@ public strictfp class RobotPlayer {
     static MapLocation enemyHQ = null;
     static ArrayList<MapLocation> possibleEnemyHQ = new ArrayList<>();
     static ArrayList<Tile> HQueue = new ArrayList<>();
+    static ArrayList<Tile> sentSpots = new ArrayList<>();
     static int previousMessageTurn;
     static ArrayList<Tile> publishQueue = new ArrayList<>();
     static ArrayList<MapLocation> stink = new ArrayList<>();
@@ -178,6 +180,7 @@ public strictfp class RobotPlayer {
             //System.out.println("QUEUE");
             if(HQueue.size() > 0) {
                 Tile tempTile = HQueue.remove(0);
+                sentSpots.add(tempTile);
                 char action = tempTile.getLocationType();
                 if(action == 'C') {
                     MapLocation soup = toMapLocation(tempTile);
@@ -495,7 +498,7 @@ public strictfp class RobotPlayer {
             if(!map.hasSoup(toMapLocation(tempTile))) {
                 //System.out.println("New Soup SPot Found!");
                 map.addSoup(toMapLocation(tempTile), 100);
-                if(rc.getType().equals(RobotType.HQ)) {
+                if(rc.getType().equals(RobotType.HQ) && notRepresented(tempTile)) {
                     HQueue.add(tempTile);
                     System.out.println("HQ adding soup to queue");
                 }
@@ -511,6 +514,25 @@ public strictfp class RobotPlayer {
             hqLocation = toMapLocation(tempTile);
             System.out.println("HQ Location: " + hqLocation.x + ", " + hqLocation.y);
         }
+    }
+
+    /**
+     * determines if the HQ has already added a similar soup tile to queue
+     * @param tempTile
+     */
+    public static boolean notRepresented(Tile tempTile) {
+        for(int i = 0; i < HQueue.size(); i++) {
+            if(toMapLocation(tempTile).distanceSquaredTo(toMapLocation(HQueue.get(i))) <= soupRadius) {
+                return false;
+            }
+        }
+
+        for(int i = 0; i < sentSpots.size(); i++) {
+            if(toMapLocation(tempTile).distanceSquaredTo(toMapLocation(sentSpots.get(i))) <= soupRadius) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -661,8 +683,10 @@ public strictfp class RobotPlayer {
 
     public static void endOfTurn() throws GameActionException {
 
-        if(turnCount > 1) {
-            scanArea(false, false, true); //Scan area before turn
+        if(rc.getType() == RobotType.MINER || rc.getType() == RobotType.LANDSCAPER || rc.getType() == RobotType.DELIVERY_DRONE) {
+            if(turnCount > 1) {
+                scanArea(false, false, true); //Scan area before turn
+            }
         }
         publishTiles();
 
