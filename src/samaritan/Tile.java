@@ -32,6 +32,7 @@ public class Tile {
         this.turnUpdated = rc.getRoundNum();
     }
 
+    public Tile getTile(){return this;}
     public int getX(){return this.x;}
     public int getY(){return this.y;}
     public boolean getSoup(){return this.hasSoup;}

@@ -1186,4 +1186,115 @@ public strictfp class RobotPlayer {
             }
         }
     }
+
+    /**
+     * Finds a safe location for the location of a building
+     * @return
+     */
+    public MapLocation findSafeBuildLocation() throws GameActionException {
+        MapLocation testLocation, centerOfMap;
+        Direction rayDirection;
+        Direction[] testDirections;
+        int currentElevation = rc.senseElevation(rc.getLocation());
+        boolean isWithinSensor;
+        boolean complete = false;
+        System.out.println("Finding safe location for building...");
+        centerOfMap = findCenterOfMap(); //give Me CEntr
+        testLocation = rc.getLocation();
+        rayDirection = testLocation.directionTo(centerOfMap); //get the direction the ray will be cast
+        testDirections = getTestDirections(rayDirection);
+
+        System.out.println("Beginning scan in direction " + rayDirection.toString());
+
+        testLocation.add(rayDirection);
+        testLocation.add(rayDirection);
+        testLocation.add(rayDirection);
+
+        //cast the ray and test locations along its path
+        while(complete) {
+            //move test location along path of ray
+            System.out.println("Moving scan out another layer");
+            testLocation.add(rayDirection);
+
+            for (int i = 0; i < 4; i++){
+                if ((i != 2)){
+                    if (rc.canSenseLocation(testLocation) && rc.onTheMap(testLocation)){
+                        if(testBuildLocation(testLocation, currentElevation)){
+                            complete = true;
+                            break;
+                        }
+                    }else{
+                        System.out.println("Tried to scan off map or out of sensor range, changing ray direciton...");
+                        //out of sensor radius OR is off map -- change direction
+                        testLocation = rc.getLocation();
+                        rayDirection.rotateRight();
+                        testLocation.add(rayDirection);
+                        testLocation.add(rayDirection);
+                        testLocation.add(rayDirection);
+                    }
+                }
+                testLocation.add(testDirections[i]);
+            }
+        }
+        return testLocation;
+    }
+
+    private boolean testBuildLocation(MapLocation testLocation, int currentElevation) throws GameActionException {
+        int elevation = rc.senseElevation(testLocation);
+        if ((elevation >= currentElevation - 3) && (elevation <= currentElevation + 3)){
+            if(map.locationClear(testLocation)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Direction[] getTestDirections(Direction rayDirection){
+        Direction[] testDirections = new Direction[4];
+        switch(rayDirection) {
+            case NORTH:
+                testDirections[0] = EAST;
+                testDirections[1] = WEST;
+                testDirections[2] = WEST;
+                testDirections[3] = EAST;
+                break;
+            case NORTHEAST:
+                testDirections[0] = NORTHWEST;
+                testDirections[1] = SOUTHEAST;
+                testDirections[2] = SOUTHEAST;
+                testDirections[3] = NORTHWEST;
+                break;
+            case SOUTHEAST:
+                testDirections[0] = NORTHWEST;
+                testDirections[1] = SOUTHEAST;
+                testDirections[2] = SOUTHEAST;
+                testDirections[3] = NORTHWEST;
+                break;
+            case SOUTH:
+                testDirections[0] = EAST;
+                testDirections[1] = WEST;
+                testDirections[2] = WEST;
+                testDirections[3] = EAST;
+                break;
+            case SOUTHWEST:
+                testDirections[0] = NORTHWEST;
+                testDirections[1] = SOUTHEAST;
+                testDirections[2] = SOUTHEAST;
+                testDirections[3] = NORTHWEST;
+                break;
+            case NORTHWEST:
+                testDirections[0] = NORTHEAST;
+                testDirections[1] = SOUTHWEST;
+                testDirections[2] = SOUTHWEST;
+                testDirections[3] = NORTHEAST;
+                break;
+            default:
+                testDirections[0] = NORTH;
+                testDirections[1] = SOUTH;
+                testDirections[2] = SOUTH;
+                testDirections[3] = NORTH;
+                break;
+        }
+        return testDirections;
+    }
 }

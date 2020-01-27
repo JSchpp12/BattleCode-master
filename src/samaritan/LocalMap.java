@@ -185,7 +185,23 @@ public class LocalMap {
         }
     }
 
-
+    /**
+     * Test if a specific location is clear of units, soup, buildings, and cows
+     * @param mapLocation location to be tested
+     * @return boolean value
+     */
+    public boolean locationClear(MapLocation mapLocation){
+        if (this.map[mapLocation.x][mapLocation.y] != null){
+            Tile target = this.map[mapLocation.x][mapLocation.y].getTile();
+            if ( !target.getSoup() && !target.hasEnemy() && (target.getLocationType() == '-')){
+                return true;
+            }else{
+                return false;
+            }
+        }else{
+            return false;
+        }
+    }
     /**
      * Update the amount of pollution at a location -- will throw exception if tile does not exist
      * @param inLocation target location
